@@ -4,12 +4,35 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { useLocale } from '@/i18n/provider'
 import type { SearchResult } from '@/lib/types'
 
+function getInitialTheme(): 'light' | 'dark' {
+  if (typeof window === 'undefined') return 'light'
+  const stored = localStorage.getItem('theme')
+  if (stored === 'dark' || stored === 'light') return stored
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
+
 export function TopBar() {
   const { locale, t, setLocale } = useLocale()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [showResults, setShowResults] = useState(false)
+  const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const wrapperRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const t = getInitialTheme()
+    setTheme(t)
+    document.documentElement.setAttribute('data-theme', t)
+  }, [])
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => {
+      const next = prev === 'dark' ? 'light' : 'dark'
+      document.documentElement.setAttribute('data-theme', next)
+      localStorage.setItem('theme', next)
+      return next
+    })
+  }, [])
 
   const handleSearch = useCallback(async (value: string) => {
     setQuery(value)
@@ -76,12 +99,23 @@ export function TopBar() {
           </div>
         )}
       </div>
-      <button
-        className="locale-toggle"
-        onClick={() => setLocale(locale === 'en' ? 'ko' : 'en')}
-      >
-        {t.locale.toggle}
+      <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
+        {theme === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19'}
       </button>
+      <div className="locale-switch">
+        <button
+          className={`locale-btn ${locale === 'en' ? 'active' : ''}`}
+          onClick={() => setLocale('en')}
+        >
+          EN
+        </button>
+        <button
+          className={`locale-btn ${locale === 'ko' ? 'active' : ''}`}
+          onClick={() => setLocale('ko')}
+        >
+          KR
+        </button>
+      </div>
     </div>
   )
 }

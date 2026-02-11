@@ -5,9 +5,10 @@ interface RegionColumnProps {
   readonly regionCode: string
   readonly category: string
   readonly locale: string
+  readonly mode?: 'ranking' | 'top-rankers' | 'climbers' | 'new-entrants'
 }
 
-export function RegionColumn({ regionCode, category, locale }: RegionColumnProps) {
+export function RegionColumn({ regionCode, category, locale, mode = 'ranking' }: RegionColumnProps) {
   const rcfg = REGIONS[regionCode]
   if (!rcfg) return null
 
@@ -27,6 +28,7 @@ export function RegionColumn({ regionCode, category, locale }: RegionColumnProps
         region={regionCode}
         category={category}
         expanded={true}
+        mode={mode}
       />
 
       {/* Extra platforms - collapsed */}
@@ -37,6 +39,7 @@ export function RegionColumn({ regionCode, category, locale }: RegionColumnProps
           region={regionCode}
           category={category}
           expanded={false}
+          mode={mode}
         />
       ))}
     </div>

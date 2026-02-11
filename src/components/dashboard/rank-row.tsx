@@ -1,14 +1,23 @@
 import Link from 'next/link'
 import type { RankingItem } from '@/lib/types'
-import { isKbeautyBrand, getCompanyName, rankBadgeClass, formatPrice, formatChange } from '@/lib/brands'
+import { isKbeautyBrand, getCompanyName, formatPrice, formatChange } from '@/lib/brands'
 
 interface RankRowProps {
   readonly item: RankingItem
+  readonly region?: string
 }
 
-export function RankRow({ item }: RankRowProps) {
-  const badgeCls = rankBadgeClass(item.rank)
+function truncateTitle(title: string | undefined, maxLen: number = 45): string {
+  if (!title) return ''
+  // Strip common prefixes like "[특가]", "[리뷰이벤트]", etc.
+  const cleaned = title.replace(/^\[.*?\]\s*/g, '').trim()
+  if (cleaned.length <= maxLen) return cleaned
+  return `${cleaned.slice(0, maxLen)}...`
+}
+
+export function RankRow({ item, region = 'KR' }: RankRowProps) {
   const isKb = isKbeautyBrand(item.brand)
+  const isOverseas = region !== 'KR'
   const company = getCompanyName(item.brand)
   const price = formatPrice(item.price, item.currency)
   const change = formatChange(item.wow_change, item.is_new)
@@ -18,27 +27,34 @@ export function RankRow({ item }: RankRowProps) {
     ? item.subcategory.split(':')[1]
     : null
 
-  const titleShort = item.title?.length > 65
-    ? `${item.title.slice(0, 65)}...`
-    : item.title
+  const titleShort = truncateTitle(item.title)
+
+  // Highlight K-beauty rows in overseas markets
+  const rowCls = [
+    'rank-row',
+    `delay-${delay}`,
+    isKb && isOverseas ? 'kb-row' : '',
+  ].filter(Boolean).join(' ')
 
   return (
-    <div className={`rank-row delay-${delay}`}>
-      <div className={`rr-rank ${badgeCls}`}>{item.rank}</div>
+    <div className={rowCls}>
+      <div className="rr-rank-num">{item.rank}</div>
       <div className="rr-info">
         <div className="rr-brand">
           <Link href={`/brand/${encodeURIComponent(item.brand)}`} className="brand-link">
-            {isKb && <span className="kb-tag">🇰🇷 K-Beauty</span>}
             {item.brand}
-            {subPart && <span className="subcat-label">{subPart}</span>}
-            {company && <span className="co-tag">{company}</span>}
           </Link>
+          {isKb && isOverseas && <span className="kb-tag">K</span>}
+          {subPart && <span className="subcat-label">{subPart}</span>}
         </div>
+        {company && <div className="rr-company">{company}</div>}
         {titleShort && <div className="rr-title">{titleShort}</div>}
       </div>
-      <div className="rr-price">{price}</div>
-      <div className="rr-change">
-        <span className={`ch-badge ${change.className}`}>{change.text}</span>
+      <div className="rr-right">
+        <div className="rr-change">
+          <span className={`ch-badge ${change.className}`}>{change.text}</span>
+        </div>
+        {price && <div className="rr-price">{price}</div>}
       </div>
     </div>
   )

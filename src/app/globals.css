@@ -4,21 +4,18 @@
    Tailwind v4 @theme
    ================================================================ */
 @theme inline {
-  --color-bg-void: #f7f7f8;
-  --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f1f1f4;
-  --color-bg-card: rgba(255, 255, 255, 0.85);
-  --color-bg-elevated: #f5f5f8;
-
-  --color-border-subtle: rgba(0, 0, 0, 0.05);
-  --color-border-default: rgba(0, 0, 0, 0.08);
-  --color-border-hover: rgba(0, 0, 0, 0.14);
-
-  --color-text-primary: #1a1a2e;
-  --color-text-secondary: #4a4a62;
-  --color-text-tertiary: #7a7a92;
-  --color-text-quaternary: #a0a0b4;
-
+  --color-bg-void: var(--bg-void);
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-card: var(--bg-card);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-default: var(--border-default);
+  --color-border-hover: var(--border-hover);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-text-quaternary: var(--text-quaternary);
   --color-accent-violet: #7c3aed;
   --color-accent-violet-dim: rgba(124, 58, 237, 0.08);
   --color-accent-rose: #e11d48;
@@ -28,21 +25,16 @@
   --color-accent-amber: #d97706;
   --color-accent-amber-dim: rgba(217, 119, 6, 0.07);
   --color-accent-sky: #0284c7;
-
   --color-gold: #ca8a04;
-  --color-gold-glow: rgba(202, 138, 4, 0.18);
   --color-silver: #64748b;
-  --color-silver-glow: rgba(100, 116, 139, 0.14);
   --color-bronze: #b45309;
-  --color-bronze-glow: rgba(180, 83, 9, 0.14);
-
   --font-display: 'Newsreader', Georgia, serif;
   --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'IBM Plex Mono', 'Menlo', monospace;
 }
 
 /* ================================================================
-   Root Variables (CSS custom properties for runtime use)
+   Light Theme (default)
    ================================================================ */
 :root {
   --bg-void: #f7f7f8;
@@ -67,10 +59,15 @@
   --accent-violet-dim: rgba(124, 58, 237, 0.08);
   --accent-violet-glow: rgba(124, 58, 237, 0.18);
   --accent-rose: #e11d48;
+  --accent-rose-dim: rgba(225, 29, 72, 0.06);
   --accent-emerald: #059669;
   --accent-amber: #d97706;
   --accent-sky: #0284c7;
-  --accent-cyan: #0891b2;
+
+  --kb-row-bg: rgba(236, 72, 153, 0.06);
+  --kb-row-border: rgba(236, 72, 153, 0.12);
+  --kb-tag-bg: rgba(236, 72, 153, 0.10);
+  --kb-tag-color: #db2777;
 
   --gold: #ca8a04;
   --gold-glow: rgba(202, 138, 4, 0.18);
@@ -94,6 +91,101 @@
   --radius-full: 9999px;
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ================================================================
+   Dark Theme
+   ================================================================ */
+[data-theme="dark"] {
+  --bg-void: #0f0f14;
+  --bg-primary: #1a1a24;
+  --bg-secondary: #22222e;
+  --bg-card: rgba(26, 26, 36, 0.9);
+  --bg-card-solid: #1a1a24;
+  --bg-elevated: #252532;
+  --bg-glass: rgba(26, 26, 36, 0.7);
+
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(255, 255, 255, 0.14);
+  --border-active: rgba(255, 255, 255, 0.22);
+
+  --text-primary: #e8e8f0;
+  --text-secondary: #b0b0c4;
+  --text-tertiary: #7a7a92;
+  --text-quaternary: #55556a;
+
+  --accent-violet: #a78bfa;
+  --accent-violet-dim: rgba(167, 139, 250, 0.12);
+  --accent-violet-glow: rgba(167, 139, 250, 0.22);
+  --accent-rose: #fb7185;
+  --accent-rose-dim: rgba(251, 113, 133, 0.10);
+  --accent-emerald: #34d399;
+  --accent-amber: #fbbf24;
+  --accent-sky: #38bdf8;
+
+  --kb-row-bg: rgba(236, 72, 153, 0.08);
+  --kb-row-border: rgba(236, 72, 153, 0.18);
+  --kb-tag-bg: rgba(236, 72, 153, 0.15);
+  --kb-tag-color: #f472b6;
+
+  --gold: #eab308;
+  --gold-glow: rgba(234, 179, 8, 0.15);
+  --silver: #94a3b8;
+  --silver-glow: rgba(148, 163, 184, 0.12);
+  --bronze: #f59e0b;
+  --bronze-glow: rgba(245, 158, 11, 0.12);
+
+  --gradient-brand: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%);
+  --gradient-hero: linear-gradient(135deg, #a78bfa 0%, #fb7185 50%, #fbbf24 100%);
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.3), 0 0 0 1px var(--border-subtle);
+  --shadow-elevated: 0 4px 16px rgba(0,0,0,0.4), 0 0 0 1px var(--border-default);
+}
+
+/* Auto dark mode via system preference */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg-void: #0f0f14;
+    --bg-primary: #1a1a24;
+    --bg-secondary: #22222e;
+    --bg-card: rgba(26, 26, 36, 0.9);
+    --bg-card-solid: #1a1a24;
+    --bg-elevated: #252532;
+    --bg-glass: rgba(26, 26, 36, 0.7);
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --border-default: rgba(255, 255, 255, 0.08);
+    --border-hover: rgba(255, 255, 255, 0.14);
+    --border-active: rgba(255, 255, 255, 0.22);
+    --text-primary: #e8e8f0;
+    --text-secondary: #b0b0c4;
+    --text-tertiary: #7a7a92;
+    --text-quaternary: #55556a;
+    --accent-violet: #a78bfa;
+    --accent-violet-dim: rgba(167, 139, 250, 0.12);
+    --accent-violet-glow: rgba(167, 139, 250, 0.22);
+    --accent-rose: #fb7185;
+    --accent-rose-dim: rgba(251, 113, 133, 0.10);
+    --accent-emerald: #34d399;
+    --accent-amber: #fbbf24;
+    --accent-sky: #38bdf8;
+    --kb-row-bg: rgba(236, 72, 153, 0.08);
+    --kb-row-border: rgba(236, 72, 153, 0.18);
+    --kb-tag-bg: rgba(236, 72, 153, 0.15);
+    --kb-tag-color: #f472b6;
+    --gold: #eab308;
+    --gold-glow: rgba(234, 179, 8, 0.15);
+    --silver: #94a3b8;
+    --silver-glow: rgba(148, 163, 184, 0.12);
+    --bronze: #f59e0b;
+    --bronze-glow: rgba(245, 158, 11, 0.12);
+    --gradient-brand: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%);
+    --gradient-hero: linear-gradient(135deg, #a78bfa 0%, #fb7185 50%, #fbbf24 100%);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.3), 0 0 0 1px var(--border-subtle);
+    --shadow-elevated: 0 4px 16px rgba(0,0,0,0.4), 0 0 0 1px var(--border-default);
+  }
 }
 
 /* ================================================================
@@ -125,27 +217,6 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-}
-.hero-sub {
-  display: flex;
-  gap: 10px;
-  margin-top: 6px;
-}
-.hero-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.75rem;
-  font-family: var(--font-mono);
-  color: var(--text-tertiary);
-  background: var(--bg-secondary);
-  padding: 3px 10px;
-  border-radius: var(--radius-full);
-  border: 1px solid var(--border-subtle);
-}
-.hero-chip .val {
-  font-weight: 600;
-  color: var(--accent-violet);
 }
 
 /* ================================================================
@@ -200,7 +271,6 @@ body {
   font-weight: 600;
 }
 
-/* Coming Soon pills */
 .cs-pill {
   display: inline-flex;
   align-items: center;
@@ -303,7 +373,7 @@ body {
 }
 .plat-toggle-hd::-webkit-details-marker { display: none; }
 .plat-toggle-hd::after {
-  content: '▸';
+  content: '\25B8';
   margin-left: auto;
   font-size: 0.7rem;
   color: var(--text-quaternary);
@@ -320,6 +390,16 @@ body {
   width: 28px;
   height: 28px;
   border-radius: var(--radius-xs);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.plat-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+/* Fallback emoji styling */
+.plat-icon.emoji-icon {
   font-size: 1.05rem;
   line-height: 1;
 }
@@ -349,48 +429,39 @@ body {
    ================================================================ */
 .rank-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
-  padding: 7px 0;
-  border-bottom: 1px solid var(--border-subtle);
+  padding: 8px 8px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 2px;
   animation: fadeSlideUp 0.4s var(--ease-out-expo) forwards;
   opacity: 0;
+  transition: background 0.15s;
 }
-.rank-row:last-child {
-  border-bottom: none;
+.rank-row:hover {
+  background: var(--bg-secondary);
 }
 
-.rr-rank {
+/* K-beauty highlight row (overseas only) */
+.rank-row.kb-row {
+  background: var(--kb-row-bg);
+  border: 1px solid var(--kb-row-border);
+}
+.rank-row.kb-row:hover {
+  background: rgba(236, 72, 153, 0.10);
+}
+
+.rr-rank-num {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-sm);
-  font-size: 0.75rem;
+  width: 22px;
+  font-size: 0.78rem;
   font-weight: 700;
   font-family: var(--font-mono);
-  flex-shrink: 0;
-}
-.rr-rank.gold {
-  background: linear-gradient(135deg, var(--gold-glow), rgba(202,138,4,0.06));
-  color: var(--gold);
-  border: 1px solid rgba(202,138,4,0.25);
-}
-.rr-rank.silver {
-  background: var(--silver-glow);
-  color: var(--silver);
-  border: 1px solid rgba(100,116,139,0.2);
-}
-.rr-rank.bronze {
-  background: var(--bronze-glow);
-  color: var(--bronze);
-  border: 1px solid rgba(180,83,9,0.2);
-}
-.rr-rank.default {
-  background: var(--bg-secondary);
   color: var(--text-tertiary);
-  border: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  padding-top: 2px;
 }
 
 .rr-info {
@@ -400,32 +471,41 @@ body {
 .rr-brand {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   font-size: 0.82rem;
-  font-weight: 500;
+  font-weight: 600;
   flex-wrap: wrap;
 }
+.rr-company {
+  font-size: 0.68rem;
+  color: var(--text-quaternary);
+  margin-top: 1px;
+}
 .rr-title {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: var(--text-tertiary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+  margin-top: 1px;
+}
+
+.rr-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
 }
 .rr-price {
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: 0.68rem;
   font-family: var(--font-mono);
-  color: var(--text-secondary);
-  flex-shrink: 0;
+  color: var(--text-quaternary);
   text-align: right;
-  min-width: 65px;
 }
 .rr-change {
   flex-shrink: 0;
-  min-width: 48px;
-  text-align: right;
 }
 
 /* ================================================================
@@ -434,15 +514,15 @@ body {
 .kb-tag {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  font-size: 0.6rem;
-  font-weight: 600;
-  padding: 1px 6px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  padding: 1px 5px;
   border-radius: var(--radius-full);
-  background: rgba(225, 29, 72, 0.08);
-  color: var(--accent-rose);
-  border: 1px solid rgba(225, 29, 72, 0.15);
+  background: var(--kb-tag-bg);
+  color: var(--kb-tag-color);
+  border: 1px solid var(--kb-row-border);
   white-space: nowrap;
+  letter-spacing: 0.02em;
 }
 
 .co-tag {
@@ -474,7 +554,7 @@ body {
   color: var(--accent-emerald);
 }
 .ch-badge.down {
-  background: rgba(225, 29, 72, 0.06);
+  background: var(--accent-rose-dim);
   color: var(--accent-rose);
 }
 .ch-badge.flat {
@@ -489,7 +569,7 @@ body {
 }
 
 .subcat-label {
-  font-size: 0.6rem;
+  font-size: 0.58rem;
   font-weight: 500;
   padding: 1px 5px;
   border-radius: var(--radius-full);
@@ -510,7 +590,7 @@ body {
 }
 
 /* ================================================================
-   Signal Cards (Top Rankers, Risers, New Entrants)
+   Signal Cards (Top Rankers, Fast Movers, New Entrants)
    ================================================================ */
 .signal-card {
   display: flex;
@@ -608,34 +688,6 @@ body {
 }
 
 /* ================================================================
-   Score Ring
-   ================================================================ */
-.score-ring {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.ring-inner {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: var(--bg-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.ring-val {
-  font-size: 0.85rem;
-  font-weight: 700;
-  font-family: var(--font-mono);
-  color: var(--text-primary);
-}
-
-/* ================================================================
    Search
    ================================================================ */
 .search-input {
@@ -694,24 +746,233 @@ body {
 }
 
 /* ================================================================
-   Locale Toggle
+   Locale Switch (EN / KR toggle)
    ================================================================ */
-.locale-toggle {
+.locale-switch {
+  display: flex;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  background: var(--bg-secondary);
+}
+.locale-btn {
+  padding: 5px 12px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--text-quaternary);
+  transition: all 0.15s;
+}
+.locale-btn.active {
+  background: var(--accent-violet);
+  color: #fff;
+}
+
+/* ================================================================
+   Theme Toggle
+   ================================================================ */
+.theme-toggle {
   display: inline-flex;
   align-items: center;
-  padding: 5px 12px;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
   border-radius: var(--radius-full);
-  font-size: 0.75rem;
-  font-weight: 600;
   cursor: pointer;
   border: 1px solid var(--border-default);
   background: var(--bg-primary);
   color: var(--text-secondary);
+  font-size: 1rem;
   transition: all 0.15s;
 }
-.locale-toggle:hover {
+.theme-toggle:hover {
   border-color: var(--accent-violet);
   color: var(--accent-violet);
+}
+
+/* ================================================================
+   Brand Detail Page
+   ================================================================ */
+.brand-hero {
+  margin-bottom: 28px;
+}
+.brand-hero-name {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+.brand-hero-kr {
+  font-size: 1rem;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+.brand-analysis {
+  margin-bottom: 28px;
+  padding: 16px 20px;
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  border-left: 3px solid var(--accent-violet);
+}
+.brand-analysis-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent-violet);
+  margin-bottom: 6px;
+}
+.brand-analysis-text {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+/* Score card */
+.score-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+}
+.score-ring {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ring-inner {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--bg-card-solid);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ring-val {
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+.score-label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* Brand table */
+.brand-table-wrap {
+  overflow-x: auto;
+  margin-bottom: 32px;
+}
+.brand-table {
+  width: 100%;
+  font-size: 0.82rem;
+  font-family: var(--font-mono);
+  border-collapse: collapse;
+}
+.brand-table th {
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 8px 12px;
+  border-bottom: 2px solid var(--border-default);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.brand-table td {
+  padding: 8px 12px;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.brand-table tr:hover td {
+  background: var(--bg-secondary);
+}
+.txt-dim {
+  color: var(--text-quaternary);
+}
+
+/* Product row */
+.product-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  transition: box-shadow 0.15s;
+}
+.product-row:hover {
+  box-shadow: var(--shadow-card);
+}
+.product-rank {
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--accent-violet);
+  flex-shrink: 0;
+  min-width: 28px;
+  padding-top: 2px;
+}
+.product-info {
+  flex: 1;
+  min-width: 0;
+}
+.product-title {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.product-meta {
+  display: flex;
+  gap: 6px;
+  margin-top: 3px;
+  flex-wrap: wrap;
+}
+.product-plat {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  background: var(--accent-violet-dim);
+  color: var(--accent-violet);
+}
+.product-cat {
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  background: var(--bg-secondary);
+  color: var(--text-tertiary);
+}
+.product-rating {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  background: rgba(234, 179, 8, 0.1);
+  color: var(--gold);
+}
+.product-price {
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  color: var(--text-quaternary);
+  flex-shrink: 0;
 }
 
 /* ================================================================

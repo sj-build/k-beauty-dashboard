@@ -29,6 +29,7 @@ function resolveCategory(canonical: string): string {
     fragrance: 'fragrance',
     skincare_device: 'skincare_device',
     beauty_home_device: 'beauty_home_device',
+    beauty_device: 'skincare_device',
   }
   return map[canonical] ?? canonical
 }
@@ -509,6 +510,220 @@ export async function getNewEntrants(
   }
 }
 
+// ── Platform Climbers (per-platform, for Fast Movers tab) ──
+
+export async function getPlatformClimbers(
+  platform: string,
+  region: string,
+  mainCategory: string,
+  limit: number = 15,
+): Promise<RankingItem[]> {
+  try {
+    const supabase = getSupabaseAdmin()
+    const aliases = getCategoryAliases(mainCategory)
+    const categoryFilters = aliases
+      .map((a) => `category.eq.${a},category.like.${a}:%`)
+      .join(',')
+
+    // Get latest 2 snapshot dates
+    const { data: dateData } = await supabase
+      .from('commerce_rankings')
+      .select('snapshot_date')
+      .eq('platform', platform)
+      .eq('region', region)
+      .or(categoryFilters)
+      .order('snapshot_date', { ascending: false })
+
+    if (!dateData?.length) return []
+    const allDates = [...new Set(dateData.map((d) => d.snapshot_date as string))]
+    if (allDates.length < 2) return []
+
+    const [latestDate, prevDate] = allDates
+
+    // Get current and previous rankings
+    const fetchRows = async (date: string) => {
+      let query = supabase
+        .from('commerce_rankings')
+        .select('*')
+        .eq('platform', platform)
+        .eq('region', region)
+        .eq('snapshot_date', date)
+        .or(categoryFilters)
+
+      const { data } = await query
+      return data ?? []
+    }
+
+    const [currentRows, prevRows] = await Promise.all([
+      fetchRows(latestDate),
+      fetchRows(prevDate),
+    ])
+
+    // Build prev brand→rank map
+    const prevBrandRank: Record<string, number> = {}
+    for (const pr of prevRows) {
+      const brand = extractBrand(pr.brand_text, pr.title)
+      const existing = prevBrandRank[brand]
+      if (existing === undefined || pr.rank_position < existing) {
+        prevBrandRank[brand] = pr.rank_position
+      }
+    }
+
+    // Build current brand best rank
+    const brandBest: Record<string, {
+      brand: string
+      title: string
+      subcategory: string
+      rank_position: number
+      price: number | null
+      currency: string
+    }> = {}
+
+    for (const row of currentRows) {
+      const brand = extractBrand(row.brand_text, row.title)
+      const existing = brandBest[brand]
+      if (!existing || row.rank_position < existing.rank_position) {
+        brandBest[brand] = {
+          brand,
+          title: row.title ?? '',
+          subcategory: row.category ?? '',
+          rank_position: row.rank_position,
+          price: row.price != null ? Number(row.price) : null,
+          currency: row.currency ?? 'USD',
+        }
+      }
+    }
+
+    // Calculate climbers (positive wow_change = improved)
+    const climbers: RankingItem[] = []
+    for (const entry of Object.values(brandBest)) {
+      const prevRank = prevBrandRank[entry.brand]
+      if (prevRank === undefined) continue
+      const wowChange = prevRank - entry.rank_position
+      if (wowChange <= 0) continue
+
+      climbers.push({
+        rank: entry.rank_position,
+        brand: entry.brand,
+        title: entry.title,
+        subcategory: entry.subcategory,
+        price: entry.price ?? undefined,
+        currency: entry.currency,
+        wow_change: wowChange,
+        is_new: false,
+      })
+    }
+
+    return climbers
+      .sort((a, b) => b.wow_change - a.wow_change)
+      .slice(0, limit)
+  } catch (e) {
+    console.error('Failed to get platform climbers:', e)
+    return []
+  }
+}
+
+// ── Platform New Entrants (per-platform, for New Entrants tab) ──
+
+export async function getPlatformNewEntrants(
+  platform: string,
+  region: string,
+  mainCategory: string,
+  limit: number = 15,
+): Promise<RankingItem[]> {
+  try {
+    const supabase = getSupabaseAdmin()
+    const aliases = getCategoryAliases(mainCategory)
+    const categoryFilters = aliases
+      .map((a) => `category.eq.${a},category.like.${a}:%`)
+      .join(',')
+
+    // Get latest 2 snapshot dates
+    const { data: dateData } = await supabase
+      .from('commerce_rankings')
+      .select('snapshot_date')
+      .eq('platform', platform)
+      .eq('region', region)
+      .or(categoryFilters)
+      .order('snapshot_date', { ascending: false })
+
+    if (!dateData?.length) return []
+    const allDates = [...new Set(dateData.map((d) => d.snapshot_date as string))]
+    if (allDates.length < 2) return []
+
+    const [latestDate, prevDate] = allDates
+
+    // Get current and previous rankings
+    const fetchRows = async (date: string) => {
+      let query = supabase
+        .from('commerce_rankings')
+        .select('*')
+        .eq('platform', platform)
+        .eq('region', region)
+        .eq('snapshot_date', date)
+        .or(categoryFilters)
+
+      const { data } = await query
+      return data ?? []
+    }
+
+    const [currentRows, prevRows] = await Promise.all([
+      fetchRows(latestDate),
+      fetchRows(prevDate),
+    ])
+
+    // Build set of previous brands
+    const prevBrands = new Set<string>()
+    for (const pr of prevRows) {
+      prevBrands.add(extractBrand(pr.brand_text, pr.title))
+    }
+
+    // Find brands in current but not in previous
+    const brandBest: Record<string, {
+      brand: string
+      title: string
+      subcategory: string
+      rank_position: number
+      price: number | null
+      currency: string
+    }> = {}
+
+    for (const row of currentRows) {
+      const brand = extractBrand(row.brand_text, row.title)
+      if (prevBrands.has(brand)) continue
+
+      const existing = brandBest[brand]
+      if (!existing || row.rank_position < existing.rank_position) {
+        brandBest[brand] = {
+          brand,
+          title: row.title ?? '',
+          subcategory: row.category ?? '',
+          rank_position: row.rank_position,
+          price: row.price != null ? Number(row.price) : null,
+          currency: row.currency ?? 'USD',
+        }
+      }
+    }
+
+    return Object.values(brandBest)
+      .sort((a, b) => a.rank_position - b.rank_position)
+      .slice(0, limit)
+      .map((entry) => ({
+        rank: entry.rank_position,
+        brand: entry.brand,
+        title: entry.title,
+        subcategory: entry.subcategory,
+        price: entry.price ?? undefined,
+        currency: entry.currency,
+        wow_change: 0,
+        is_new: true,
+      }))
+  } catch (e) {
+    console.error('Failed to get platform new entrants:', e)
+    return []
+  }
+}
+
 // ── Cross-border Winners ──
 
 export async function getCrossborder(
@@ -773,6 +988,65 @@ export async function getCompanyDetail(
   } catch (e) {
     console.error('Failed to get company detail:', e)
     return null
+  }
+}
+
+// ── Brand Key Products ──
+
+export interface BrandProduct {
+  readonly platform: string
+  readonly region: string
+  readonly title: string
+  readonly rank: number
+  readonly price?: number
+  readonly currency: string
+  readonly category: string
+  readonly rating?: number
+  readonly review_count?: number
+}
+
+export async function getBrandProducts(
+  brandName: string,
+  limit: number = 10,
+): Promise<BrandProduct[]> {
+  try {
+    const supabase = getSupabaseAdmin()
+
+    // Get latest snapshot date
+    const { data: dateData } = await supabase
+      .from('commerce_rankings')
+      .select('snapshot_date')
+      .order('snapshot_date', { ascending: false })
+      .limit(1)
+
+    if (!dateData?.length) return []
+    const latestDate = dateData[0].snapshot_date
+
+    const { data: rows, error } = await supabase
+      .from('commerce_rankings')
+      .select('platform, region, title, rank_position, price, currency, category, rating, review_count')
+      .eq('snapshot_date', latestDate)
+      .ilike('brand_text', brandName)
+      .order('rank_position', { ascending: true })
+      .limit(limit)
+
+    if (error) throw error
+    if (!rows?.length) return []
+
+    return rows.map((r) => ({
+      platform: r.platform,
+      region: r.region,
+      title: r.title ?? '',
+      rank: r.rank_position,
+      price: r.price != null ? Number(r.price) : undefined,
+      currency: r.currency ?? 'USD',
+      category: r.category ?? '',
+      rating: r.rating != null ? Number(r.rating) : undefined,
+      review_count: r.review_count ?? undefined,
+    }))
+  } catch (e) {
+    console.error('Failed to get brand products:', e)
+    return []
   }
 }
 

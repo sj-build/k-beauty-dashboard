@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none">
+  <rect width="40" height="40" rx="8" fill="#010101"/>
+  <text x="20" y="20" font-family="Arial,sans-serif" font-size="16" font-weight="bold" fill="#25F4EE" text-anchor="middle">T</text>
+  <text x="21" y="20" font-family="Arial,sans-serif" font-size="16" font-weight="bold" fill="#FE2C55" text-anchor="middle" opacity="0.7">T</text>
+  <text x="20" y="33" font-family="Arial,sans-serif" font-size="7" font-weight="bold" fill="white" text-anchor="middle">Shop</text>
+</svg>

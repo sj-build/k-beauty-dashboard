@@ -20,15 +20,15 @@ export const REGION_FLAGS: Readonly<Record<string, string>> = {
 }
 
 export const PLATFORM_LOGOS: Readonly<Record<string, string>> = {
-  oliveyoung: '\u{1F33F}',
-  amazon_us: '\u{1F4E6}',
-  amazon_ae: '\u{1F4E6}',
-  amazon_sa: '\u{1F4E6}',
-  noon_ae: '\u{2600}\u{FE0F}',
-  ulta: '\u{1F48E}',
-  tiktokshop_us: '\u{1F3B5}',
-  lifepharmacy: '\u{1F48A}',
-  watsons_ae: '\u{1F49A}',
+  oliveyoung: '/logos/oliveyoung.svg',
+  amazon_us: '/logos/amazon.svg',
+  amazon_ae: '/logos/amazon.svg',
+  amazon_sa: '/logos/amazon.svg',
+  noon_ae: '/logos/noon.svg',
+  ulta: '/logos/ulta.svg',
+  tiktokshop_us: '/logos/tiktokshop.svg',
+  lifepharmacy: '/logos/lifepharmacy.svg',
+  watsons_ae: '/logos/watsons.svg',
 }
 
 export const REGIONS: Readonly<Record<string, RegionConfig>> = {
@@ -52,15 +52,14 @@ export const REGIONS: Readonly<Record<string, RegionConfig>> = {
   },
 }
 
-export const CATEGORY_LABELS = ['Skincare', 'Haircare', 'Makeup', 'Fragrance', 'Skincare Device', 'Beauty Home Device'] as const
+export const CATEGORY_LABELS = ['Skincare', 'Haircare', 'Makeup', 'Fragrance', 'Beauty Device'] as const
 
 export const CATEGORY_KEYS: Readonly<Record<string, string>> = {
   Skincare: 'skincare',
   Haircare: 'haircare',
   Makeup: 'makeup',
   Fragrance: 'fragrance',
-  'Skincare Device': 'skincare_device',
-  'Beauty Home Device': 'beauty_home_device',
+  'Beauty Device': 'beauty_device',
 }
 
 export const MENU_ITEMS = [
@@ -83,6 +82,7 @@ export const CATEGORY_ALIASES: Readonly<Record<string, readonly string[]>> = {
   beauty: ['skincare', 'beauty', 'personal_care', 'derma', 'k_beauty', 'bestsellers'],
   makeup: ['makeup'],
   fragrance: ['fragrance'],
-  skincare_device: ['skincare_device'],
-  beauty_home_device: ['beauty_home_device'],
+  beauty_device: ['skincare_device', 'beauty_home_device'],
+  skincare_device: ['skincare_device', 'beauty_home_device'],
+  beauty_home_device: ['skincare_device', 'beauty_home_device'],
 }

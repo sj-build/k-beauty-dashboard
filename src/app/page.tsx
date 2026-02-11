@@ -3,9 +3,6 @@ import { TopBar } from '@/components/layout/top-bar'
 import { NavPills } from '@/components/layout/nav-pills'
 import { CategoryPills } from '@/components/layout/category-pills'
 import { RegionColumn } from '@/components/dashboard/region-column'
-import { TopRankersList } from '@/components/signal/top-rankers-list'
-import { ClimbersList } from '@/components/signal/climbers-list'
-import { NewEntrantsList } from '@/components/signal/new-entrants-list'
 import { CrossborderList } from '@/components/signal/crossborder-list'
 import { CATEGORY_KEYS } from '@/lib/constants'
 
@@ -83,7 +80,17 @@ function TopRankersTab({ category }: { readonly category: string }) {
     <>
       <div className="section-hd">Top Rankers</div>
       <div className="section-sub">Brands consistently in top rankings across snapshots</div>
-      <TopRankersList category={category} />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {(['KR', 'US', 'AE'] as const).map((region) => (
+          <RegionColumn
+            key={region}
+            regionCode={region}
+            category={category}
+            locale="en"
+            mode="top-rankers"
+          />
+        ))}
+      </div>
     </>
   )
 }
@@ -93,7 +100,17 @@ function RisersTab({ category }: { readonly category: string }) {
     <>
       <div className="section-hd">Fast Movers</div>
       <div className="section-sub">Biggest week-over-week rank improvements</div>
-      <ClimbersList category={category} />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {(['KR', 'US', 'AE'] as const).map((region) => (
+          <RegionColumn
+            key={region}
+            regionCode={region}
+            category={category}
+            locale="en"
+            mode="climbers"
+          />
+        ))}
+      </div>
     </>
   )
 }
@@ -103,7 +120,17 @@ function NewEntrantsTab({ category }: { readonly category: string }) {
     <>
       <div className="section-hd">New Entrants</div>
       <div className="section-sub">First-time entries in the latest week</div>
-      <NewEntrantsList category={category} />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {(['KR', 'US', 'AE'] as const).map((region) => (
+          <RegionColumn
+            key={region}
+            regionCode={region}
+            category={category}
+            locale="en"
+            mode="new-entrants"
+          />
+        ))}
+      </div>
     </>
   )
 }

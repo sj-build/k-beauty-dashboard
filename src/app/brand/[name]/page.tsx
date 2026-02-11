@@ -1,6 +1,8 @@
 import Link from 'next/link'
-import { getBrandDrilldown, searchBrands } from '@/lib/queries'
-import { isKbeautyBrand, getCompanyName } from '@/lib/brands'
+import { getBrandDrilldown, searchBrands, getBrandProducts } from '@/lib/queries'
+import type { BrandProduct } from '@/lib/queries'
+import { isKbeautyBrand, getCompanyName, formatPrice } from '@/lib/brands'
+import { PLATFORMS, REGION_FLAGS } from '@/lib/constants'
 
 interface BrandPageProps {
   readonly params: Promise<{ name: string }>
@@ -10,7 +12,6 @@ export default async function BrandPage({ params }: BrandPageProps) {
   const { name } = await params
   const brandName = decodeURIComponent(name)
 
-  // Look up brand_id from name
   const results = await searchBrands(brandName, 1)
   if (!results.length) {
     return (
@@ -22,7 +23,10 @@ export default async function BrandPage({ params }: BrandPageProps) {
   }
 
   const brandResult = results[0]
-  const drilldown = await getBrandDrilldown(brandResult.id, 8)
+  const [drilldown, products] = await Promise.all([
+    getBrandDrilldown(brandResult.id, 8),
+    getBrandProducts(brandName, 15),
+  ])
 
   if (!drilldown) {
     return (
@@ -42,24 +46,20 @@ export default async function BrandPage({ params }: BrandPageProps) {
       <Link href="/" className="brand-link text-sm mb-6 inline-block">&larr; Back to Dashboard</Link>
 
       {/* Brand header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          {isKb && <span className="kb-tag">🇰🇷 K-Beauty</span>}
-          <h1 className="text-2xl font-bold" style={{ fontFamily: 'var(--font-display)' }}>
-            {drilldown.brand_name}
-          </h1>
-          {drilldown.brand_name_kr && (
-            <span className="text-text-tertiary text-lg">{drilldown.brand_name_kr}</span>
-          )}
+      <div className="brand-hero">
+        <div className="flex items-center gap-3 mb-1">
+          <h1 className="brand-hero-name">{drilldown.brand_name}</h1>
+          {isKb && <span className="kb-tag">K</span>}
         </div>
-        {company && <span className="co-tag">{company}</span>}
-        {regions.length > 0 && (
-          <div className="flex gap-2 mt-3">
-            {regions.map((r) => (
-              <span key={r} className="xb-region-badge">{r}</span>
-            ))}
-          </div>
+        {drilldown.brand_name_kr && (
+          <div className="brand-hero-kr">{drilldown.brand_name_kr}</div>
         )}
+        <div className="flex items-center gap-3 mt-3 flex-wrap">
+          {company && <span className="co-tag">{company}</span>}
+          {regions.map((r) => (
+            <span key={r} className="xb-region-badge">{REGION_FLAGS[r] ?? ''} {r}</span>
+          ))}
+        </div>
       </div>
 
       {/* Score cards */}
@@ -70,52 +70,57 @@ export default async function BrandPage({ params }: BrandPageProps) {
         <ScoreCard label="Cross-border" score={drilldown.latest_cross_border_score} color="var(--accent-sky)" />
       </div>
 
-      {/* Explanation */}
+      {/* Analysis */}
       {drilldown.latest_explanation && (
-        <div className="mb-8 p-4 border border-border-subtle rounded-[var(--radius-md)] bg-bg-primary">
-          <div className="text-sm font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>Analysis</div>
-          <div className="text-sm" style={{ color: 'var(--text-primary)' }}>{drilldown.latest_explanation}</div>
+        <div className="brand-analysis">
+          <div className="brand-analysis-label">Analysis</div>
+          <div className="brand-analysis-text">{drilldown.latest_explanation}</div>
+        </div>
+      )}
+
+      {/* Key Products */}
+      {products.length > 0 && (
+        <div className="mb-8">
+          <div className="section-hd">Key Products</div>
+          <div className="section-sub">Current rankings across platforms</div>
+          <div className="space-y-2">
+            {products.map((p, idx) => (
+              <ProductRow key={`${p.platform}-${p.rank}-${idx}`} product={p} />
+            ))}
+          </div>
         </div>
       )}
 
       {/* Weekly history table */}
       <div className="section-hd">Weekly History</div>
       <div className="section-sub">Platform ranking trends over the past {drilldown.history.length} weeks</div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm" style={{ fontFamily: 'var(--font-mono)' }}>
+      <div className="brand-table-wrap">
+        <table className="brand-table">
           <thead>
-            <tr className="border-b border-border-default">
-              <th className="text-left py-2 px-3 font-semibold" style={{ color: 'var(--text-secondary)' }}>Week</th>
-              <th className="text-right py-2 px-3 font-semibold" style={{ color: 'var(--text-secondary)' }}>Best Rank</th>
-              <th className="text-right py-2 px-3 font-semibold" style={{ color: 'var(--text-secondary)' }}>Leader</th>
-              <th className="text-right py-2 px-3 font-semibold" style={{ color: 'var(--text-secondary)' }}>Growth</th>
-              <th className="text-right py-2 px-3 font-semibold" style={{ color: 'var(--text-secondary)' }}>OY</th>
-              <th className="text-right py-2 px-3 font-semibold" style={{ color: 'var(--text-secondary)' }}>AMZ US</th>
-              <th className="text-right py-2 px-3 font-semibold" style={{ color: 'var(--text-secondary)' }}>AMZ AE</th>
+            <tr>
+              <th className="text-left">Week</th>
+              <th className="text-right">Best Rank</th>
+              <th className="text-right">Leader</th>
+              <th className="text-right">Growth</th>
+              <th className="text-right">OY</th>
+              <th className="text-right">AMZ US</th>
+              <th className="text-right">AMZ AE</th>
             </tr>
           </thead>
           <tbody>
             {drilldown.history.map((h) => (
-              <tr key={h.week_start} className="border-b border-border-subtle">
-                <td className="py-2 px-3" style={{ color: 'var(--text-primary)' }}>{h.week_start}</td>
-                <td className="text-right py-2 px-3" style={{ color: 'var(--text-primary)' }}>
-                  {h.global_best_rank ?? '-'}
-                </td>
-                <td className="text-right py-2 px-3" style={{ color: 'var(--accent-violet)' }}>
+              <tr key={h.week_start}>
+                <td>{h.week_start}</td>
+                <td className="text-right">{h.global_best_rank ?? '-'}</td>
+                <td className="text-right" style={{ color: 'var(--accent-violet)' }}>
                   {h.leader_score || '-'}
                 </td>
-                <td className="text-right py-2 px-3" style={{ color: 'var(--accent-emerald)' }}>
+                <td className="text-right" style={{ color: 'var(--accent-emerald)' }}>
                   {h.growth_score || '-'}
                 </td>
-                <td className="text-right py-2 px-3" style={{ color: 'var(--text-tertiary)' }}>
-                  {h.oliveyoung ?? '-'}
-                </td>
-                <td className="text-right py-2 px-3" style={{ color: 'var(--text-tertiary)' }}>
-                  {h.amazon_us ?? '-'}
-                </td>
-                <td className="text-right py-2 px-3" style={{ color: 'var(--text-tertiary)' }}>
-                  {h.amazon_ae ?? '-'}
-                </td>
+                <td className="text-right txt-dim">{h.oliveyoung ?? '-'}</td>
+                <td className="text-right txt-dim">{h.amazon_us ?? '-'}</td>
+                <td className="text-right txt-dim">{h.amazon_ae ?? '-'}</td>
               </tr>
             ))}
           </tbody>
@@ -137,7 +142,7 @@ function ScoreCard({
   const deg = Math.min((score / 100) * 360, 360)
 
   return (
-    <div className="flex items-center gap-3 p-3 border border-border-subtle rounded-[var(--radius-md)] bg-bg-primary">
+    <div className="score-card">
       <div
         className="score-ring"
         style={{
@@ -148,7 +153,28 @@ function ScoreCard({
           <div className="ring-val">{Math.round(score)}</div>
         </div>
       </div>
-      <div className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>{label}</div>
+      <div className="score-label">{label}</div>
+    </div>
+  )
+}
+
+function ProductRow({ product }: { readonly product: BrandProduct }) {
+  const platformName = PLATFORMS[product.platform]?.name ?? product.platform
+  const flag = REGION_FLAGS[product.region] ?? ''
+  const price = formatPrice(product.price, product.currency)
+
+  return (
+    <div className="product-row">
+      <div className="product-rank">#{product.rank}</div>
+      <div className="product-info">
+        <div className="product-title">{product.title || 'Untitled'}</div>
+        <div className="product-meta">
+          <span className="product-plat">{flag} {platformName}</span>
+          {product.category && <span className="product-cat">{product.category}</span>}
+          {product.rating != null && <span className="product-rating">{product.rating}</span>}
+        </div>
+      </div>
+      {price && <div className="product-price">{price}</div>}
     </div>
   )
 }
