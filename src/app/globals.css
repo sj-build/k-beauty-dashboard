@@ -267,21 +267,10 @@ body {
   font-size: 1rem;
   font-weight: 600;
 }
-.rflag {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-sm);
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: #fff;
+.rflag-emoji {
+  font-size: 1.4rem;
+  line-height: 1;
 }
-.rflag.kr { background: linear-gradient(135deg, #003478, #c60c30); }
-.rflag.us { background: linear-gradient(135deg, #002868, #bf0a30); }
-.rflag.ae { background: linear-gradient(135deg, #00732f, #ce1126); }
 
 /* ================================================================
    Platform Toggle (<details>)
@@ -328,20 +317,19 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: var(--radius-xs);
-  font-size: 0.6rem;
-  font-weight: 700;
-  color: #fff;
+  font-size: 1.05rem;
+  line-height: 1;
 }
-.plat-icon.oy { background: linear-gradient(135deg, #5ca85c, #3d8b3d); }
-.plat-icon.amz { background: linear-gradient(135deg, #ff9900, #e88700); }
-.plat-icon.noon { background: linear-gradient(135deg, #f4d03f, #e8c00f); color: #333; }
-.plat-icon.ulta { background: linear-gradient(135deg, #d14a00, #b83d00); }
-.plat-icon.tts { background: linear-gradient(135deg, #010101, #333); }
-.plat-icon.lp { background: linear-gradient(135deg, #0088cc, #006699); }
-.plat-icon.wat { background: linear-gradient(135deg, #00a77e, #008866); }
+.plat-icon.oy { background: linear-gradient(135deg, rgba(92,168,92,0.12), rgba(61,139,61,0.08)); }
+.plat-icon.amz { background: linear-gradient(135deg, rgba(255,153,0,0.12), rgba(232,135,0,0.08)); }
+.plat-icon.noon { background: linear-gradient(135deg, rgba(244,208,63,0.15), rgba(232,192,15,0.08)); }
+.plat-icon.ulta { background: linear-gradient(135deg, rgba(209,74,0,0.12), rgba(184,61,0,0.08)); }
+.plat-icon.tts { background: linear-gradient(135deg, rgba(1,1,1,0.08), rgba(51,51,51,0.06)); }
+.plat-icon.lp { background: linear-gradient(135deg, rgba(0,136,204,0.12), rgba(0,102,153,0.08)); }
+.plat-icon.wat { background: linear-gradient(135deg, rgba(0,167,126,0.12), rgba(0,136,102,0.08)); }
 
 .plat-section-name {
   font-weight: 600;

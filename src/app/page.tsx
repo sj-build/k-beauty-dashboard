@@ -29,7 +29,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="hero-header">
           <div className="hero-title">
-            K-Beauty <span className="accent">Commerce Radar</span>
+            K-Beauty <span className="accent">Trend Radar</span>
           </div>
         </div>
         <div className="pt-8">
@@ -91,7 +91,7 @@ function TopRankersTab({ category }: { readonly category: string }) {
 function RisersTab({ category }: { readonly category: string }) {
   return (
     <>
-      <div className="section-hd">Risers</div>
+      <div className="section-hd">Fast Movers</div>
       <div className="section-sub">Biggest week-over-week rank improvements</div>
       <ClimbersList category={category} />
     </>

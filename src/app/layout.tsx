@@ -22,7 +22,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'K-Beauty Commerce Radar',
+  title: 'K-Beauty Trend Radar',
   description: 'Cross-platform K-Beauty ranking intelligence across Korea, US, and UAE',
 }
 

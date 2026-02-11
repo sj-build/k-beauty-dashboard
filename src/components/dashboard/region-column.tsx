@@ -1,4 +1,4 @@
-import { REGIONS } from '@/lib/constants'
+import { REGIONS, REGION_FLAGS } from '@/lib/constants'
 import { PlatformToggle } from './platform-toggle'
 
 interface RegionColumnProps {
@@ -12,11 +12,12 @@ export function RegionColumn({ regionCode, category, locale }: RegionColumnProps
   if (!rcfg) return null
 
   const name = locale === 'ko' ? rcfg.nameKr : rcfg.name
+  const flag = REGION_FLAGS[regionCode] ?? regionCode
 
   return (
     <div>
       <div className={`region-hd ${regionCode.toLowerCase()}`}>
-        <span className={`rflag ${regionCode.toLowerCase()}`}>{regionCode}</span>
+        <span className="rflag-emoji">{flag}</span>
         <span>{name}</span>
       </div>
 

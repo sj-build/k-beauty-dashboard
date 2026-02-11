@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { CrossBorderItem } from '@/lib/types'
 import { isKbeautyBrand } from '@/lib/brands'
 import { getCrossborder } from '@/lib/queries'
+import { REGION_FLAGS } from '@/lib/constants'
 
 interface CrossborderListProps {
   readonly category: string
@@ -31,7 +32,7 @@ export async function CrossborderList({ category }: CrossborderListProps) {
             </div>
             <div className="xb-regions">
               {item.regions.map((region) => (
-                <span key={region} className="xb-region-badge">{region}</span>
+                <span key={region} className="xb-region-badge">{REGION_FLAGS[region] ?? ''} {region}</span>
               ))}
             </div>
             <div className="xb-explain">{item.explanation}</div>

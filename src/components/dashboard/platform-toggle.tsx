@@ -1,4 +1,4 @@
-import { PLATFORMS } from '@/lib/constants'
+import { PLATFORMS, PLATFORM_LOGOS } from '@/lib/constants'
 import type { RankingItem } from '@/lib/types'
 import { getPlatformRanking } from '@/lib/queries'
 import { RankRow } from './rank-row'
@@ -22,11 +22,12 @@ export async function PlatformToggle({
   if (!pd) return null
 
   const items: RankingItem[] = await getPlatformRanking(platformKey, region, category, limit)
+  const logo = PLATFORM_LOGOS[platformKey] ?? pd.icon
 
   return (
     <details className="plat-toggle" open={expanded || undefined}>
       <summary className="plat-toggle-hd">
-        <div className={`plat-icon ${pd.iconCls}`}>{pd.icon}</div>
+        <div className={`plat-icon ${pd.iconCls}`}>{logo}</div>
         <span className="plat-section-name">{pd.name}</span>
         <span className="plat-section-count">{items.length} products</span>
       </summary>
