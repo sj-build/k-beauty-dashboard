@@ -278,11 +278,11 @@ export async function getConsistentRankers(
 
     const consistent = Object.values(brandStats)
       .filter((s) => s.appearances.size >= effectiveMin)
-      .sort((a, b) => b.appearances.size - a.appearances.size || a.bestRank - b.bestRank)
+      .sort((a, b) => a.bestRank - b.bestRank || b.appearances.size - a.appearances.size)
       .slice(0, limit)
 
-    return consistent.map((entry) => ({
-      rank: entry.latestRank,
+    return consistent.map((entry, idx) => ({
+      rank: idx + 1,
       brand: entry.brand,
       title: entry.title,
       price: entry.price ?? undefined,
@@ -1055,6 +1055,10 @@ export async function getBrandProducts(
 function extractBrand(brandText: string | null, title: string | null): string {
   if (brandText?.trim()) return brandText.trim()
   if (!title) return 'Unknown'
-  const words = title.split(' ')
+  const words = title.trim().split(/\s+/)
+  // Single-word titles or short words like "The", "Dr", "La" need the next word too
+  if (words.length >= 2 && words[0].length <= 3) {
+    return `${words[0]} ${words[1]}`
+  }
   return words[0] || 'Unknown'
 }
