@@ -23,17 +23,15 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   return (
     <main className="max-w-7xl mx-auto px-4 pb-12">
       {/* Hero + Controls */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="hero-header">
           <div className="hero-title">
             K-Beauty <span className="accent">Trend Radar</span>
           </div>
         </div>
-        <div className="pt-8">
-          <Suspense fallback={null}>
-            <TopBar />
-          </Suspense>
-        </div>
+        <Suspense fallback={null}>
+          <TopBar />
+        </Suspense>
       </div>
 
       {/* Navigation */}
