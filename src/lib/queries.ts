@@ -71,19 +71,25 @@ export async function getPlatformRanking(
     const supabase = getSupabaseAdmin()
     const aliases = getCategoryAliases(mainCategory)
 
-    // Get latest snapshot date
+    // Build OR filter for category aliases
+    const categoryFilters = aliases
+      .map((a) => `category.eq.${a},category.like.${a}:%`)
+      .join(',')
+
+    // Get latest snapshot date FOR THIS CATEGORY
     const { data: dateData } = await supabase
       .from('commerce_rankings')
       .select('snapshot_date')
       .eq('platform', platform)
       .eq('region', region)
+      .or(categoryFilters)
       .order('snapshot_date', { ascending: false })
       .limit(1)
 
     if (!dateData?.length) return []
     const latestDate = dateData[0].snapshot_date
 
-    // Get current rows - filter by category aliases
+    // Get current rows
     let query = supabase
       .from('commerce_rankings')
       .select('*')
@@ -91,23 +97,19 @@ export async function getPlatformRanking(
       .eq('region', region)
       .eq('snapshot_date', latestDate)
       .order('rank_position', { ascending: true })
-
-    // Build OR filter for category aliases
-    const categoryFilters = aliases
-      .map((a) => `category.eq.${a},category.like.${a}:%`)
-      .join(',')
     query = query.or(categoryFilters)
 
     const { data: currentRows, error } = await query
     if (error) throw error
     if (!currentRows?.length) return []
 
-    // Get previous snapshot for wow_change
+    // Get previous snapshot for wow_change (same category filter)
     const { data: prevDateData } = await supabase
       .from('commerce_rankings')
       .select('snapshot_date')
       .eq('platform', platform)
       .eq('region', region)
+      .or(categoryFilters)
       .lt('snapshot_date', latestDate)
       .order('snapshot_date', { ascending: false })
       .limit(1)
@@ -1012,10 +1014,11 @@ export async function getBrandProducts(
   try {
     const supabase = getSupabaseAdmin()
 
-    // Get latest snapshot date
+    // Get latest snapshot date FOR THIS BRAND
     const { data: dateData } = await supabase
       .from('commerce_rankings')
       .select('snapshot_date')
+      .ilike('brand_text', brandName)
       .order('snapshot_date', { ascending: false })
       .limit(1)
 
