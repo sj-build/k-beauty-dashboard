@@ -5,7 +5,7 @@ export const ko: Translations = {
     ranking: '현재 랭킹',
     topRankers: '부동의 탑랭커',
     risers: '급상승',
-    newEntrants: '뉴페이스',
+    newEntrants: '신규 진입자',
     crossborder: '글로벌 위너',
   },
   header: {
@@ -31,7 +31,7 @@ export const ko: Translations = {
     streak: '주 연속 상승',
   },
   newEntrants: {
-    sectionTitle: '뉴페이스',
+    sectionTitle: '신규 진입자',
     sectionSub: '이번 주 처음 진입한 브랜드',
     firstEntry: '이번 주 첫 진입',
   },

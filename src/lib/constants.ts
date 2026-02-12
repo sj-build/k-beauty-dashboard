@@ -70,7 +70,7 @@ export const MENU_ITEMS = [
   { key: 'ranking', label: 'Current Ranking', labelKr: '현재 랭킹' },
   { key: 'top-rankers', label: 'Top Rankers', labelKr: '부동의 탑랭커' },
   { key: 'risers', label: 'Fast Movers', labelKr: '급상승' },
-  { key: 'new-entrants', label: 'New Entrants', labelKr: '뉴페이스' },
+  { key: 'new-entrants', label: 'New Entrants', labelKr: '신규 진입자' },
   { key: 'crossborder', label: 'Cross-border Winners', labelKr: '글로벌 위너' },
 ] as const
 
