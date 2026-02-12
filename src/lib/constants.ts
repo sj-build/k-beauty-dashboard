@@ -5,9 +5,11 @@ export const PLATFORMS: Readonly<Record<string, PlatformConfig>> = {
   amazon_us: { name: 'Amazon US', region: 'US', iconCls: 'amz', icon: 'AZ' },
   amazon_ae: { name: 'Amazon AE', region: 'AE', iconCls: 'amz', icon: 'AZ' },
   amazon_sa: { name: 'Amazon SA', region: 'SA', iconCls: 'amz', icon: 'AZ' },
+  sephora_us: { name: 'Sephora', region: 'US', iconCls: 'seph', icon: 'SP' },
+  sephora_me: { name: 'Sephora', region: 'AE', iconCls: 'seph', icon: 'SP' },
   noon_ae: { name: 'Noon', region: 'AE', iconCls: 'noon', icon: 'NN' },
   ulta: { name: 'Ulta', region: 'US', iconCls: 'ulta', icon: 'UL' },
-  tiktokshop_us: { name: 'TikTok Shop', region: 'US', iconCls: 'tts', icon: 'TT' },
+  target: { name: 'Target', region: 'US', iconCls: 'tgt', icon: 'TG' },
   lifepharmacy: { name: 'LifePharmacy', region: 'AE', iconCls: 'lp', icon: 'LP' },
   watsons_ae: { name: 'Watsons AE', region: 'AE', iconCls: 'wat', icon: 'WA' },
 }
@@ -24,9 +26,11 @@ export const PLATFORM_LOGOS: Readonly<Record<string, string>> = {
   amazon_us: '/logos/amazon.svg',
   amazon_ae: '/logos/amazon.svg',
   amazon_sa: '/logos/amazon.svg',
+  sephora_us: '/logos/sephora.svg',
+  sephora_me: '/logos/sephora.svg',
   noon_ae: '/logos/noon.svg',
   ulta: '/logos/ulta.svg',
-  tiktokshop_us: '/logos/tiktokshop.svg',
+  target: '/logos/target.svg',
   lifepharmacy: '/logos/lifepharmacy.svg',
   watsons_ae: '/logos/watsons.svg',
 }
@@ -42,13 +46,13 @@ export const REGIONS: Readonly<Record<string, RegionConfig>> = {
     name: 'United States',
     nameKr: '미국',
     defaultPlatform: 'amazon_us',
-    extraPlatforms: ['ulta', 'tiktokshop_us'],
+    extraPlatforms: ['sephora_us', 'ulta', 'target'],
   },
   AE: {
     name: 'UAE',
     nameKr: 'UAE',
     defaultPlatform: 'amazon_ae',
-    extraPlatforms: ['noon_ae', 'watsons_ae', 'lifepharmacy'],
+    extraPlatforms: ['sephora_me', 'noon_ae', 'watsons_ae', 'lifepharmacy'],
   },
 }
 
