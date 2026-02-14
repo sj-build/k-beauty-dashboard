@@ -215,6 +215,19 @@ const BRAND_TO_COMPANY: Readonly<Record<string, string>> = {
   kundalini: '쿤달', '쿤달': '쿤달',
 }
 
+/** Get all brand names (lowercase) owned by a company. Uses the BRAND_TO_COMPANY map in reverse. */
+export function getBrandsByCompany(companyName: string): readonly string[] {
+  const brands: string[] = []
+  const seen = new Set<string>()
+  for (const [brand, company] of Object.entries(BRAND_TO_COMPANY)) {
+    if (company === companyName && !seen.has(brand)) {
+      seen.add(brand)
+      brands.push(brand)
+    }
+  }
+  return brands
+}
+
 export function isKbeautyBrand(brand: string): boolean {
   if (!brand) return false
   const lower = brand.toLowerCase().trim()

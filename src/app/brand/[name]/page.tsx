@@ -55,7 +55,11 @@ export default async function BrandPage({ params }: BrandPageProps) {
           <div className="brand-hero-kr">{drilldown.brand_name_kr}</div>
         )}
         <div className="flex items-center gap-3 mt-3 flex-wrap">
-          {company && <span className="co-tag">{company}</span>}
+          {company && (
+            <Link href={`/company/${encodeURIComponent(company)}`} className="co-tag" style={{ textDecoration: 'none', cursor: 'pointer' }}>
+              {company}
+            </Link>
+          )}
           {regions.map((r) => (
             <span key={r} className="xb-region-badge">{REGION_FLAGS[r] ?? ''} {r}</span>
           ))}

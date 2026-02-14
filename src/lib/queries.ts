@@ -1409,6 +1409,180 @@ export async function getRisingStars(
   }
 }
 
+// ── Company By Name ──
+
+export interface CompanyBrandMetric {
+  readonly brand_id: string
+  readonly brand_name: string
+  readonly brand_name_kr?: string
+  readonly category?: string
+  readonly leader_score: number
+  readonly growth_score: number
+  readonly new_leader_score: number
+  readonly cross_border_score: number
+  readonly global_best_rank?: number
+}
+
+export async function getCompanyByName(
+  companyName: string,
+): Promise<CompanyDetail | null> {
+  try {
+    const supabase = getSupabaseAdmin()
+
+    // Search company_profiles by legal_name
+    const { data: profiles } = await supabase
+      .from('company_profiles')
+      .select('company_id')
+      .ilike('legal_name', companyName)
+      .limit(1)
+
+    if (profiles?.length) {
+      // Found in DB - use existing getCompanyDetail
+      return getCompanyDetail(profiles[0].company_id)
+    }
+
+    // Not in DB - build minimal CompanyDetail from static data
+    const { getBrandsByCompany } = await import('./brands')
+    const { getCompanyAdData } = await import('./ad-expenses')
+
+    const brandNames = getBrandsByCompany(companyName)
+    if (!brandNames.length) return null
+
+    const adData = getCompanyAdData(companyName)
+
+    // Build minimal profile
+    const profile: CompanyDetail['profile'] = {
+      company_id: `static-${companyName}`,
+      legal_name: companyName,
+      public_company: false,
+    }
+
+    // Try to find brand IDs from the brands table
+    const brands: CompanyBrand[] = []
+    const uniqueBrandNames = [...new Set(
+      brandNames.filter((b) => /^[a-z]/.test(b)) // only English names (skip KR duplicates)
+    )]
+
+    if (uniqueBrandNames.length > 0) {
+      const { data: brandRows } = await supabase
+        .from('brands')
+        .select('id, name, name_kr, category')
+        .in('name', uniqueBrandNames.map((b) =>
+          b.split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+        ))
+
+      // Also try lowercase match
+      const { data: brandRowsLower } = await supabase
+        .from('brands')
+        .select('id, name, name_kr, category')
+        .in('name', uniqueBrandNames)
+
+      const allBrands = [...(brandRows ?? []), ...(brandRowsLower ?? [])]
+      const seenIds = new Set<string>()
+      for (const b of allBrands) {
+        if (!seenIds.has(b.id)) {
+          seenIds.add(b.id)
+          brands.push({
+            brand_id: b.id,
+            brand_name: b.name,
+            brand_name_kr: b.name_kr ?? undefined,
+            category: b.category ?? undefined,
+          })
+        }
+      }
+    }
+
+    return {
+      profile,
+      brands,
+      financials: adData ? [{
+        snapshot_date: '2024-12-31',
+        source: 'DART 사업보고서',
+        revenue: adData.revenue * 100000000, // 억원 → 원
+      }] : [],
+      market: null,
+    }
+  } catch {
+    return null
+  }
+}
+
+export async function getCompanyBrandMetrics(
+  companyName: string,
+): Promise<readonly CompanyBrandMetric[]> {
+  try {
+    const supabase = getSupabaseAdmin()
+    const { getBrandsByCompany } = await import('./brands')
+
+    const brandNames = getBrandsByCompany(companyName)
+    if (!brandNames.length) return []
+
+    // Get English brand names only (skip KR duplicates)
+    const uniqueBrandNames = [...new Set(
+      brandNames.filter((b) => /^[a-z]/.test(b))
+    )]
+
+    if (!uniqueBrandNames.length) return []
+
+    // Find brand IDs - try both as-is and capitalized
+    const { data: brandRows } = await supabase
+      .from('brands')
+      .select('id, name, name_kr, category')
+      .in('name', uniqueBrandNames)
+
+    const { data: brandRowsCap } = await supabase
+      .from('brands')
+      .select('id, name, name_kr, category')
+      .in('name', uniqueBrandNames.map((b) =>
+        b.split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+      ))
+
+    const allBrands = [...(brandRows ?? []), ...(brandRowsCap ?? [])]
+    const brandMap = new Map<string, { name: string; name_kr?: string; category?: string }>()
+    const brandIds: string[] = []
+    for (const b of allBrands) {
+      if (!brandMap.has(b.id)) {
+        brandMap.set(b.id, { name: b.name, name_kr: b.name_kr ?? undefined, category: b.category ?? undefined })
+        brandIds.push(b.id)
+      }
+    }
+
+    if (!brandIds.length) return []
+
+    // Get latest week
+    const weeks = await getAvailableWeeks()
+    if (!weeks.length) return []
+    const latestWeek = weeks[0]
+
+    // Fetch metrics for all company brands
+    const { data: metrics, error } = await supabase
+      .from('weekly_brand_metrics')
+      .select('brand_id, leader_score, growth_score, new_leader_score, cross_border_score, global_best_rank')
+      .eq('week_start', latestWeek)
+      .in('brand_id', brandIds)
+
+    if (error) throw error
+    if (!metrics?.length) return []
+
+    return metrics.map((m): CompanyBrandMetric => {
+      const brand = brandMap.get(m.brand_id)
+      return {
+        brand_id: m.brand_id,
+        brand_name: brand?.name ?? m.brand_id,
+        brand_name_kr: brand?.name_kr,
+        category: brand?.category,
+        leader_score: m.leader_score ?? 0,
+        growth_score: m.growth_score ?? 0,
+        new_leader_score: m.new_leader_score ?? 0,
+        cross_border_score: m.cross_border_score ?? 0,
+        global_best_rank: m.global_best_rank ?? undefined,
+      }
+    }).sort((a, b) => (a.global_best_rank ?? 999) - (b.global_best_rank ?? 999))
+  } catch {
+    return []
+  }
+}
+
 // ── Helper ──
 
 function extractBrand(brandText: string | null, title: string | null): string {
