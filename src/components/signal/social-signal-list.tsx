@@ -139,6 +139,20 @@ export async function SocialSignalList({ category }: { readonly category?: strin
                   </span>
                 )}
               </div>
+              {companyName && (
+                <div style={{ marginTop: '1px' }}>
+                  <Link
+                    href={`/company/${encodeURIComponent(companyName)}`}
+                    style={{
+                      fontSize: '0.6rem',
+                      color: 'var(--text-quaternary)',
+                      textDecoration: 'none',
+                    }}
+                  >
+                    {companyName}
+                  </Link>
+                </div>
+              )}
               <div className="signal-explain">
                 {item.notes ?? `${predLabel} predicted`}
               </div>

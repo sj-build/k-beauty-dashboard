@@ -66,13 +66,17 @@ export async function HiddenGemsList({ category }: { readonly category?: string 
                   {item.brand_name}
                 </Link>
                 {item.company_name && (
-                  <span style={{
-                    fontSize: '0.6rem',
-                    color: 'var(--text-quaternary)',
-                    marginLeft: '4px',
-                  }}>
+                  <Link
+                    href={`/company/${encodeURIComponent(item.company_name)}`}
+                    style={{
+                      fontSize: '0.6rem',
+                      color: 'var(--text-quaternary)',
+                      textDecoration: 'none',
+                      marginLeft: '4px',
+                    }}
+                  >
                     {item.company_name}
-                  </span>
+                  </Link>
                 )}
               </div>
               <div className="signal-explain">{item.explanation}</div>

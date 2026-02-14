@@ -5,8 +5,8 @@ import { getRisingStars } from '@/lib/queries'
 
 const PLATFORM_SHORT: Readonly<Record<string, string>> = {
   OliveYoung: 'OY',
-  'Amazon US': 'AZ',
-  'Amazon AE': 'AZ',
+  'Amazon US': 'AZ-US',
+  'Amazon AE': 'AZ-AE',
   Sephora: 'SP',
   Ulta: 'UL',
   Noon: 'NN',
@@ -88,6 +88,18 @@ export async function RisingStarsList({ category }: { readonly category?: string
 
         return (
           <div key={item.brand_id} className={`signal-card animate-in delay-${Math.min(idx + 1, 10)}`}>
+            {/* Rank index */}
+            <div style={{
+              fontSize: '0.58rem',
+              fontWeight: 600,
+              color: 'var(--text-quaternary)',
+              minWidth: '18px',
+              textAlign: 'right',
+              paddingTop: '2px',
+            }}>
+              {idx + 1}
+            </div>
+
             {/* Score badge */}
             <div className="signal-rank" style={{
               background: scoreBg(item.organic_score),
@@ -107,6 +119,11 @@ export async function RisingStarsList({ category }: { readonly category?: string
                 <Link href={`/brand/${encodeURIComponent(item.brand_name)}`} className="brand-link">
                   {item.brand_name}
                 </Link>
+                {item.brand_name_kr && (
+                  <span style={{ fontSize: '0.62rem', color: 'var(--text-tertiary)', fontWeight: 400 }}>
+                    {item.brand_name_kr}
+                  </span>
+                )}
                 {item.ad_level === 'low' && (
                   <span style={{
                     fontSize: '0.58rem',
@@ -125,9 +142,16 @@ export async function RisingStarsList({ category }: { readonly category?: string
               {/* Company + ad ratio */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
                 {item.company_name && (
-                  <span style={{ fontSize: '0.62rem', color: 'var(--text-quaternary)' }}>
+                  <Link
+                    href={`/company/${encodeURIComponent(item.company_name)}`}
+                    style={{
+                      fontSize: '0.62rem',
+                      color: 'var(--text-quaternary)',
+                      textDecoration: 'none',
+                    }}
+                  >
                     {item.company_name}
-                  </span>
+                  </Link>
                 )}
                 {item.ad_ratio != null && (
                   <span style={{
@@ -215,6 +239,18 @@ export async function RisingStarsList({ category }: { readonly category?: string
                   </span>
                 )}
               </div>
+
+              {/* Explanation */}
+              {item.explanation && (
+                <div style={{
+                  fontSize: '0.6rem',
+                  color: 'var(--text-quaternary)',
+                  marginTop: '4px',
+                  fontStyle: 'italic',
+                }}>
+                  {item.explanation}
+                </div>
+              )}
             </div>
           </div>
         )

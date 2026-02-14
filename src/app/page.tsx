@@ -8,6 +8,7 @@ import { SocialSignalList } from '@/components/signal/social-signal-list'
 import { HiddenGemsList } from '@/components/signal/hidden-gems-list'
 import { RisingStarsList } from '@/components/signal/rising-stars-list'
 import { CATEGORY_KEYS } from '@/lib/constants'
+import { getAvailableWeeks } from '@/lib/queries'
 
 const VALID_CATEGORY_KEYS = new Set(Object.values(CATEGORY_KEYS))
 
@@ -23,6 +24,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     ? catParam
     : CATEGORY_KEYS[catParam.charAt(0).toUpperCase() + catParam.slice(1)] ?? catParam
 
+  const weeks = await getAvailableWeeks()
+  const latestWeek = weeks[0] ?? null
+
   return (
     <main className="max-w-7xl mx-auto px-4 pb-12">
       {/* Hero + Controls */}
@@ -31,6 +35,16 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           <div className="hero-title">
             K-Beauty <span className="accent">Trend Radar</span>
           </div>
+          {latestWeek && (
+            <div style={{
+              fontSize: '0.65rem',
+              color: 'var(--text-quaternary)',
+              fontWeight: 500,
+              marginTop: '2px',
+            }}>
+              Data as of {new Date(latestWeek).toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' })}
+            </div>
+          )}
         </div>
         <Suspense fallback={null}>
           <TopBar />
