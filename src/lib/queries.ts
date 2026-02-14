@@ -19,6 +19,7 @@ import type {
   CompanyBrand,
   SocialSignalItem,
   HiddenGemItem,
+  RisingStarItem,
 } from './types'
 
 // ── Category resolution ──
@@ -1229,6 +1230,176 @@ export async function getHiddenGems(
     })
   } catch (e) {
     console.error('Failed to get hidden gems:', e)
+    return []
+  }
+}
+
+// ── Rising Stars ──
+
+export async function getRisingStars(
+  category?: string,
+  limit: number = 30,
+): Promise<RisingStarItem[]> {
+  try {
+    const supabase = getSupabaseAdmin()
+    const { getCompanyName } = await import('./brands')
+    const { getOrganicMultiplier, getAdLevel, getAdRatioByCompany } = await import('./ad-expenses')
+
+    // Get latest week
+    const weeks = await getAvailableWeeks()
+    if (!weeks.length) return []
+    const latestWeek = weeks[0]
+
+    // Fetch metrics with brand join (same pattern as getHiddenGems)
+    let query = supabase
+      .from('weekly_brand_metrics')
+      .select(`
+        brand_id, leader_score, growth_score, new_leader_score, cross_border_score,
+        oliveyoung_best_rank, amazon_us_best_rank, amazon_ae_best_rank,
+        sephora_us_best_rank, ulta_best_rank, noon_ae_best_rank,
+        global_best_rank, is_new_entrant, markets_present,
+        brands!inner(name, name_kr, category)
+      `)
+      .eq('week_start', latestWeek)
+      .or('growth_score.gt.0,new_leader_score.gt.0,cross_border_score.gt.0')
+
+    if (category) {
+      const dbCat = resolveCategory(category)
+      query = query.eq('brands.category', dbCat)
+    }
+
+    const { data: metricsData, error: metricsErr } = await query
+    if (metricsErr) throw metricsErr
+    if (!metricsData?.length) return []
+
+    // Batch load social hypotheses
+    const entityNames = metricsData.map((row) => {
+      const brand = row.brands as unknown as { name: string }
+      return brand.name
+    })
+
+    const { data: socialData } = await supabase
+      .from('social_hypotheses')
+      .select('entity_name, prediction, confidence, signals, notes')
+      .in('entity_name', entityNames)
+
+    const socialMap = new Map<string, {
+      prediction: string
+      confidence: number
+      platforms: string[]
+      notes?: string
+    }>()
+
+    if (socialData) {
+      for (const s of socialData) {
+        let signals: Array<{ platform?: string }> = []
+        if (s.signals) {
+          try {
+            signals = typeof s.signals === 'string' ? JSON.parse(s.signals) : s.signals
+          } catch { /* ignore */ }
+        }
+        const platforms = [...new Set(
+          signals.filter((sig) => sig.platform).map((sig) => sig.platform as string)
+        )]
+        socialMap.set(s.entity_name, {
+          prediction: s.prediction,
+          confidence: s.confidence,
+          platforms,
+          notes: s.notes ?? undefined,
+        })
+      }
+    }
+
+    // Build rising star items
+    const items = metricsData
+      .map((row) => {
+        const brand = row.brands as unknown as { name: string; name_kr: string | null; category: string }
+        const companyName = getCompanyName(brand.name) ?? undefined
+        const isTier1 = companyName ? TIER1_COMPANIES.has(companyName) : false
+        if (isTier1) return null
+
+        const organicMultiplier = companyName ? getOrganicMultiplier(companyName) : 0.5
+        const adLevel = companyName ? getAdLevel(companyName) : 'unknown' as const
+        const adRatio = companyName ? getAdRatioByCompany(companyName) : undefined
+
+        const social = socialMap.get(brand.name)
+
+        // Commerce platforms
+        const platforms: string[] = []
+        if (row.oliveyoung_best_rank) platforms.push('OliveYoung')
+        if (row.amazon_us_best_rank) platforms.push('Amazon US')
+        if (row.amazon_ae_best_rank) platforms.push('Amazon AE')
+        if (row.sephora_us_best_rank) platforms.push('Sephora')
+        if (row.ulta_best_rank) platforms.push('Ulta')
+        if (row.noon_ae_best_rank) platforms.push('Noon')
+
+        const bestRank = Math.min(
+          ...[
+            row.oliveyoung_best_rank,
+            row.amazon_us_best_rank,
+            row.amazon_ae_best_rank,
+            row.sephora_us_best_rank,
+            row.ulta_best_rank,
+            row.noon_ae_best_rank,
+          ].filter((r): r is number => r != null && r > 0)
+        )
+
+        // Organic Score calculation
+        const growthScore = row.growth_score ?? 0
+        const newLeaderScore = row.new_leader_score ?? 0
+        const crossBorderScore = row.cross_border_score ?? 0
+        const leaderScore = row.leader_score ?? 0
+
+        const socialPoints = (social?.confidence ?? 0) * 40
+        const growthPoints = growthScore * 0.3
+        const newLeaderPoints = newLeaderScore * 0.2
+        const crossBorderPoints = crossBorderScore * 0.1
+        const organicBonus = organicMultiplier * 30
+        const leaderPenalty = leaderScore > 60 ? (leaderScore - 60) * 0.3 : 0
+
+        const organicScore = Math.round(
+          Math.max(0, Math.min(100,
+            socialPoints + growthPoints + newLeaderPoints + crossBorderPoints + organicBonus - leaderPenalty
+          ))
+        )
+
+        // Build explanation
+        const parts: string[] = []
+        if (adLevel === 'low') parts.push(`Low ad spend (${adRatio ?? '?'}%)`)
+        if (social && social.confidence >= 0.7) parts.push(`Strong social signal (${Math.round(social.confidence * 100)}%)`)
+        if (growthScore > 0) parts.push(`Growth ${growthScore}`)
+        if (newLeaderScore > 0) parts.push('New entrant momentum')
+        if (platforms.length >= 3) parts.push(`${platforms.length} platforms`)
+        const explanation = parts.join(' · ') || 'Emerging organic growth signal'
+
+        return {
+          brand_id: row.brand_id,
+          brand_name: brand.name,
+          brand_name_kr: brand.name_kr ?? undefined,
+          company_name: companyName,
+          growth_score: growthScore,
+          new_leader_score: newLeaderScore,
+          cross_border_score: crossBorderScore,
+          leader_score: leaderScore,
+          platforms,
+          best_rank: bestRank === Infinity ? undefined : bestRank,
+          social_confidence: social?.confidence,
+          social_prediction: social?.prediction,
+          social_platforms: social?.platforms ?? [],
+          social_notes: social?.notes,
+          ad_ratio: adRatio ?? undefined,
+          ad_level: adLevel,
+          organic_score: organicScore,
+          explanation,
+        } satisfies RisingStarItem
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null)
+      .sort((a, b) => b.organic_score - a.organic_score)
+      .slice(0, limit)
+
+    return items
+  } catch (e) {
+    console.error('Failed to get rising stars:', e)
     return []
   }
 }

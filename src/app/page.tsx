@@ -6,6 +6,7 @@ import { RegionColumn } from '@/components/dashboard/region-column'
 import { CrossborderList } from '@/components/signal/crossborder-list'
 import { SocialSignalList } from '@/components/signal/social-signal-list'
 import { HiddenGemsList } from '@/components/signal/hidden-gems-list'
+import { RisingStarsList } from '@/components/signal/rising-stars-list'
 import { CATEGORY_KEYS } from '@/lib/constants'
 
 const VALID_CATEGORY_KEYS = new Set(Object.values(CATEGORY_KEYS))
@@ -53,6 +54,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       {tab === 'new-entrants' && <NewEntrantsTab category={category} />}
       {tab === 'crossborder' && <CrossborderTab category={category} />}
       {tab === 'social-signal' && <SocialSignalTab category={category} />}
+      {tab === 'rising-stars' && <RisingStarsTab category={category} />}
       {tab === 'hidden-gems' && <HiddenGemsTab category={category} />}
     </main>
   )
@@ -153,6 +155,16 @@ function SocialSignalTab({ category }: { readonly category: string }) {
       <div className="section-hd">Social Signal</div>
       <div className="section-sub">AI-predicted brand trends from TikTok, YouTube, and Instagram signals</div>
       <SocialSignalList category={category} />
+    </>
+  )
+}
+
+function RisingStarsTab({ category }: { readonly category: string }) {
+  return (
+    <>
+      <div className="section-hd">Rising Stars</div>
+      <div className="section-sub">Organic growth brands — high social signals with low ad spend</div>
+      <RisingStarsList category={category} />
     </>
   )
 }

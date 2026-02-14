@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import type { SocialSignalItem, SocialSignalDetail } from '@/lib/types'
-import { isKbeautyBrand } from '@/lib/brands'
+import { isKbeautyBrand, getCompanyName } from '@/lib/brands'
 import { getSocialSignals } from '@/lib/queries'
+import { getAdRatio, getAdLevel } from '@/lib/ad-expenses'
 
 const PREDICTION_LABELS: Readonly<Record<string, string>> = {
   will_rise_significantly: 'Strong Rise',
@@ -62,6 +63,9 @@ export async function SocialSignalList({ category }: { readonly category?: strin
         const platforms = getTopPlatforms(item.signals)
         const signalTypes = getTopSignalTypes(item.signals)
         const predLabel = PREDICTION_LABELS[item.prediction] ?? item.prediction
+        const companyName = getCompanyName(item.entity_name)
+        const adRatio = companyName ? getAdRatio(item.entity_name) : null
+        const adLevel = companyName ? getAdLevel(companyName) : 'unknown'
         const confidenceColor = item.confidence >= 0.8
           ? 'var(--accent-emerald)'
           : item.confidence >= 0.7
@@ -98,6 +102,42 @@ export async function SocialSignalList({ category }: { readonly category?: strin
                 }}>
                   {predLabel}
                 </span>
+                {adLevel === 'low' && (
+                  <span style={{
+                    fontSize: '0.58rem',
+                    fontWeight: 700,
+                    padding: '1px 6px',
+                    borderRadius: '4px',
+                    background: 'rgba(5, 150, 105, 0.1)',
+                    color: '#059669',
+                  }}>
+                    Organic
+                  </span>
+                )}
+                {adLevel === 'high' && (
+                  <span style={{
+                    fontSize: '0.58rem',
+                    fontWeight: 700,
+                    padding: '1px 6px',
+                    borderRadius: '4px',
+                    background: 'rgba(225, 29, 72, 0.08)',
+                    color: '#e11d48',
+                  }}>
+                    Paid
+                  </span>
+                )}
+                {adRatio != null && adLevel !== 'low' && adLevel !== 'high' && (
+                  <span style={{
+                    fontSize: '0.56rem',
+                    fontWeight: 600,
+                    padding: '1px 5px',
+                    borderRadius: '3px',
+                    background: 'rgba(217, 119, 6, 0.08)',
+                    color: '#d97706',
+                  }}>
+                    Ad {adRatio}%
+                  </span>
+                )}
               </div>
               <div className="signal-explain">
                 {item.notes ?? `${predLabel} predicted`}

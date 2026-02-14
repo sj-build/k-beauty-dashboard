@@ -193,6 +193,31 @@ export interface HiddenGemItem {
   readonly explanation: string
 }
 
+export interface RisingStarItem {
+  readonly brand_name: string
+  readonly brand_name_kr?: string
+  readonly company_name?: string
+  readonly brand_id: string
+  // Commerce scores
+  readonly growth_score: number
+  readonly new_leader_score: number
+  readonly cross_border_score: number
+  readonly leader_score: number
+  readonly platforms: readonly string[]
+  readonly best_rank?: number
+  // Social signal
+  readonly social_confidence?: number
+  readonly social_prediction?: string
+  readonly social_platforms: readonly string[]
+  readonly social_notes?: string
+  // Ad expense
+  readonly ad_ratio?: number
+  readonly ad_level: 'high' | 'mid' | 'low' | 'unknown'
+  // Composite
+  readonly organic_score: number
+  readonly explanation: string
+}
+
 export interface PlatformConfig {
   readonly name: string
   readonly region: string

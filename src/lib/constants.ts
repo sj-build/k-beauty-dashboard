@@ -73,6 +73,7 @@ export const MENU_ITEMS = [
   { key: 'new-entrants', label: 'New Entrants', labelKr: '신규 진입자' },
   { key: 'crossborder', label: 'Cross-border Winners', labelKr: '글로벌 위너' },
   { key: 'social-signal', label: 'Social Signal', labelKr: '소셜 시그널' },
+  { key: 'rising-stars', label: 'Rising Stars', labelKr: '라이징 스타' },
   { key: 'hidden-gems', label: 'Hidden Gems', labelKr: '숨은 보석' },
 ] as const
 
