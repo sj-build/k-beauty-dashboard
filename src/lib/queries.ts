@@ -1243,7 +1243,7 @@ export async function getRisingStars(
   try {
     const supabase = getSupabaseAdmin()
     const { getCompanyName } = await import('./brands')
-    const { getOrganicMultiplier, getAdLevel, getAdRatioByCompany } = await import('./ad-expenses')
+    const { getOrganicMultiplier, getAdLevel, getAdRatioByCompany, getAdSpend } = await import('./ad-expenses')
 
     // Get latest week
     const weeks = await getAvailableWeeks()
@@ -1321,6 +1321,7 @@ export async function getRisingStars(
         const organicMultiplier = companyName ? getOrganicMultiplier(companyName) : 0.5
         const adLevel = companyName ? getAdLevel(companyName) : 'unknown' as const
         const adRatio = companyName ? getAdRatioByCompany(companyName) : undefined
+        const adSpend = companyName ? getAdSpend(companyName) : undefined
 
         const social = socialMap.get(brand.name)
 
@@ -1365,7 +1366,7 @@ export async function getRisingStars(
 
         // Build explanation
         const parts: string[] = []
-        if (adLevel === 'low') parts.push(`Low ad spend (${adRatio ?? '?'}%)`)
+        if (adLevel === 'low') parts.push(`Low ad spend (${adRatio ?? '?'}%, ${adSpend ?? '?'}억)`)
         if (social && social.confidence >= 0.7) parts.push(`Strong social signal (${Math.round(social.confidence * 100)}%)`)
         if (growthScore > 0) parts.push(`Growth ${growthScore}`)
         if (newLeaderScore > 0) parts.push('New entrant momentum')
@@ -1388,6 +1389,7 @@ export async function getRisingStars(
           social_platforms: social?.platforms ?? [],
           social_notes: social?.notes,
           ad_ratio: adRatio ?? undefined,
+          ad_spend: adSpend ?? undefined,
           ad_level: adLevel,
           organic_score: organicScore,
           explanation,

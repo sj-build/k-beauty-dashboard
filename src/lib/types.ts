@@ -212,6 +212,7 @@ export interface RisingStarItem {
   readonly social_notes?: string
   // Ad expense
   readonly ad_ratio?: number
+  readonly ad_spend?: number  // 억원
   readonly ad_level: 'high' | 'mid' | 'low' | 'unknown'
   // Composite
   readonly organic_score: number

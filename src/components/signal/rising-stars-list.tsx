@@ -138,7 +138,7 @@ export async function RisingStarsList({ category }: { readonly category?: string
                     background: adLevelBg(item.ad_level),
                     color: adLevelColor(item.ad_level),
                   }}>
-                    Ad {item.ad_ratio}%
+                    Ad {item.ad_ratio}%{item.ad_spend != null ? ` · ${item.ad_spend.toLocaleString()}억` : ''}
                   </span>
                 )}
                 {item.ad_level === 'unknown' && (
