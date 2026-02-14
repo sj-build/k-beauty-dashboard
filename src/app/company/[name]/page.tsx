@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getCompanyByName, getCompanyBrandMetrics } from '@/lib/queries'
 import type { CompanyBrandMetric } from '@/lib/queries'
@@ -7,6 +8,15 @@ import { formatPrice } from '@/lib/brands'
 
 interface CompanyPageProps {
   readonly params: Promise<{ name: string }>
+}
+
+export async function generateMetadata({ params }: CompanyPageProps): Promise<Metadata> {
+  const { name } = await params
+  const companyName = decodeURIComponent(name)
+  return {
+    title: `${companyName} | K-Beauty Trend Radar`,
+    description: `Company profile, owned brands, ad expense data, and market performance for ${companyName}.`,
+  }
 }
 
 function adLevelColor(level: string): string {

@@ -1,11 +1,22 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getBrandDrilldown, searchBrands, getBrandProducts } from '@/lib/queries'
 import type { BrandProduct } from '@/lib/queries'
 import { isKbeautyBrand, getCompanyName, formatPrice } from '@/lib/brands'
+import { getCompanyAdData, getAdLevel } from '@/lib/ad-expenses'
 import { PLATFORMS, REGION_FLAGS } from '@/lib/constants'
 
 interface BrandPageProps {
   readonly params: Promise<{ name: string }>
+}
+
+export async function generateMetadata({ params }: BrandPageProps): Promise<Metadata> {
+  const { name } = await params
+  const brandName = decodeURIComponent(name)
+  return {
+    title: `${brandName} | K-Beauty Trend Radar`,
+    description: `Cross-platform ranking intelligence for ${brandName} across OliveYoung, Amazon, Sephora, Ulta, and TikTok Shop.`,
+  }
 }
 
 export default async function BrandPage({ params }: BrandPageProps) {
@@ -39,6 +50,8 @@ export default async function BrandPage({ params }: BrandPageProps) {
 
   const isKb = isKbeautyBrand(drilldown.brand_name)
   const company = getCompanyName(drilldown.brand_name)
+  const adData = company ? getCompanyAdData(company) : null
+  const adLevel = company ? getAdLevel(company) : 'unknown'
   const regions = Object.keys(drilldown.markets_present)
 
   return (
@@ -63,6 +76,18 @@ export default async function BrandPage({ params }: BrandPageProps) {
           {regions.map((r) => (
             <span key={r} className="xb-region-badge">{REGION_FLAGS[r] ?? ''} {r}</span>
           ))}
+          {adData && (
+            <span style={{
+              fontSize: '0.58rem',
+              fontWeight: 600,
+              padding: '2px 8px',
+              borderRadius: 'var(--radius-full)',
+              background: adLevel === 'low' ? 'rgba(5, 150, 105, 0.1)' : adLevel === 'high' ? 'rgba(225, 29, 72, 0.08)' : 'rgba(217, 119, 6, 0.1)',
+              color: adLevel === 'low' ? '#059669' : adLevel === 'high' ? '#e11d48' : '#d97706',
+            }}>
+              Ad {adData.adRatio}% &middot; {adData.adSpend.toLocaleString()}억
+            </span>
+          )}
         </div>
       </div>
 
@@ -103,12 +128,16 @@ export default async function BrandPage({ params }: BrandPageProps) {
           <thead>
             <tr>
               <th className="text-left">Week</th>
-              <th className="text-right">Best Rank</th>
+              <th className="text-right">Best</th>
               <th className="text-right">Leader</th>
               <th className="text-right">Growth</th>
               <th className="text-right">OY</th>
-              <th className="text-right">AMZ US</th>
-              <th className="text-right">AMZ AE</th>
+              <th className="text-right">AZ-US</th>
+              <th className="text-right">AZ-AE</th>
+              <th className="text-right">Sephora</th>
+              <th className="text-right">Ulta</th>
+              <th className="text-right">TTS</th>
+              <th className="text-right">Noon</th>
             </tr>
           </thead>
           <tbody>
@@ -125,6 +154,10 @@ export default async function BrandPage({ params }: BrandPageProps) {
                 <td className="text-right txt-dim">{h.oliveyoung ?? '-'}</td>
                 <td className="text-right txt-dim">{h.amazon_us ?? '-'}</td>
                 <td className="text-right txt-dim">{h.amazon_ae ?? '-'}</td>
+                <td className="text-right txt-dim">{h.sephora_us ?? '-'}</td>
+                <td className="text-right txt-dim">{h.ulta ?? '-'}</td>
+                <td className="text-right txt-dim">{h.tiktokshop ?? '-'}</td>
+                <td className="text-right txt-dim">{h.noon_ae ?? '-'}</td>
               </tr>
             ))}
           </tbody>

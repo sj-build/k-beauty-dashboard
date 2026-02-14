@@ -832,6 +832,10 @@ export async function getBrandDrilldown(
       oliveyoung: m.oliveyoung_best_rank,
       amazon_us: m.amazon_us_best_rank,
       amazon_ae: m.amazon_ae_best_rank,
+      sephora_us: m.sephora_us_best_rank,
+      ulta: m.ulta_best_rank,
+      tiktokshop: m.tiktokshop_best_rank,
+      noon_ae: m.noon_ae_best_rank,
     }))
 
     const latest = metrics[0]

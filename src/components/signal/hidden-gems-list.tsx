@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { HiddenGemItem } from '@/lib/types'
 import { isKbeautyBrand } from '@/lib/brands'
 import { getHiddenGems } from '@/lib/queries'
+import { getAdLevel, getCompanyAdData } from '@/lib/ad-expenses'
 
 function scoreBar(value: number, max: number, color: string) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0
@@ -78,6 +79,25 @@ export async function HiddenGemsList({ category }: { readonly category?: string 
                     {item.company_name}
                   </Link>
                 )}
+                {(() => {
+                  if (!item.company_name) return null
+                  const adData = getCompanyAdData(item.company_name)
+                  const level = getAdLevel(item.company_name)
+                  if (!adData) return null
+                  return (
+                    <span style={{
+                      fontSize: '0.52rem',
+                      fontWeight: 600,
+                      padding: '1px 5px',
+                      borderRadius: 'var(--radius-full)',
+                      background: level === 'low' ? 'rgba(5, 150, 105, 0.1)' : level === 'high' ? 'rgba(225, 29, 72, 0.08)' : 'rgba(217, 119, 6, 0.1)',
+                      color: level === 'low' ? '#059669' : level === 'high' ? '#e11d48' : '#d97706',
+                      marginLeft: '4px',
+                    }}>
+                      Ad {adData.adRatio}%
+                    </span>
+                  )
+                })()}
               </div>
               <div className="signal-explain">{item.explanation}</div>
 

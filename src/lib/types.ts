@@ -90,6 +90,10 @@ export interface BrandDrilldown {
     readonly oliveyoung?: number
     readonly amazon_us?: number
     readonly amazon_ae?: number
+    readonly sephora_us?: number
+    readonly ulta?: number
+    readonly tiktokshop?: number
+    readonly noon_ae?: number
   }>
   readonly latest_explanation: string
   readonly latest_leader_score: number
