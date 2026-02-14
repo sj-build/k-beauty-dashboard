@@ -1144,24 +1144,26 @@ export async function getHiddenGems(
     const { getCompanyName } = await import('./brands')
 
     // Get latest week
-    const { data: weekData } = await supabase
-      .from('weekly_brand_metrics')
-      .select('week_start')
-      .order('week_start', { ascending: false })
-      .limit(1)
+    const weeks = await getAvailableWeeks()
+    if (!weeks.length) return []
+    const latestWeek = weeks[0]
 
-    if (!weekData?.length) return []
-    const latestWeek = weekData[0].week_start
-
-    // Fetch all metrics for latest week
+    // Fetch metrics with brand join
     let query = supabase
       .from('weekly_brand_metrics')
-      .select('*')
+      .select(`
+        brand_id, leader_score, growth_score, new_leader_score, cross_border_score,
+        oliveyoung_best_rank, amazon_us_best_rank, amazon_ae_best_rank,
+        sephora_us_best_rank, ulta_best_rank, noon_ae_best_rank,
+        global_best_rank, is_new_entrant, markets_present,
+        brands!inner(name, name_kr, category)
+      `)
       .eq('week_start', latestWeek)
+      .or('new_leader_score.gt.0,growth_score.gt.0,cross_border_score.gt.0')
 
     if (category) {
-      const cats = getCategoryAliases(category)
-      query = query.in('brand_category', cats)
+      const dbCat = resolveCategory(category)
+      query = query.eq('brands.category', dbCat)
     }
 
     const { data, error } = await query
@@ -1171,18 +1173,13 @@ export async function getHiddenGems(
     // Filter out Tier-1 conglomerate brands and sort by growth signal
     const gems = data
       .map((row) => {
-        const companyName = getCompanyName(row.brand_name) ?? undefined
+        const brand = row.brands as unknown as { name: string; name_kr: string | null; category: string }
+        const companyName = getCompanyName(brand.name) ?? undefined
         const isTier1 = companyName ? TIER1_COMPANIES.has(companyName) : false
-        return { ...row, companyName, isTier1 }
+        return { ...row, brandName: brand.name, brandNameKr: brand.name_kr, brandCategory: brand.category, companyName, isTier1 }
       })
       .filter((row) => !row.isTier1)
-      .filter((row) =>
-        (row.new_leader_score ?? 0) > 0 ||
-        (row.growth_score ?? 0) > 0 ||
-        (row.cross_border_score ?? 0) > 0
-      )
       .sort((a, b) => {
-        // Composite: new_leader (breakthrough) + growth (momentum) + cross_border (reach)
         const scoreA = (a.new_leader_score ?? 0) * 2 + (a.growth_score ?? 0) * 1.5 + (a.cross_border_score ?? 0)
         const scoreB = (b.new_leader_score ?? 0) * 2 + (b.growth_score ?? 0) * 1.5 + (b.cross_border_score ?? 0)
         return scoreB - scoreA
@@ -1197,7 +1194,6 @@ export async function getHiddenGems(
       if (row.sephora_us_best_rank) platforms.push('Sephora')
       if (row.ulta_best_rank) platforms.push('Ulta')
       if (row.noon_ae_best_rank) platforms.push('Noon')
-      if (row.target_best_rank) platforms.push('Target')
 
       const bestRank = Math.min(
         ...[
@@ -1207,7 +1203,6 @@ export async function getHiddenGems(
           row.sephora_us_best_rank,
           row.ulta_best_rank,
           row.noon_ae_best_rank,
-          row.target_best_rank,
         ].filter((r): r is number => r != null && r > 0)
       )
 
@@ -1219,10 +1214,10 @@ export async function getHiddenGems(
 
       return {
         brand_id: row.brand_id,
-        brand_name: row.brand_name,
-        brand_name_kr: row.brand_name_kr ?? undefined,
+        brand_name: row.brandName,
+        brand_name_kr: row.brandNameKr ?? undefined,
         company_name: row.companyName,
-        category: row.brand_category ?? undefined,
+        category: row.brandCategory ?? undefined,
         new_leader_score: row.new_leader_score ?? 0,
         growth_score: row.growth_score ?? 0,
         cross_border_score: row.cross_border_score ?? 0,
