@@ -178,6 +178,21 @@ export interface SocialSignalDetail {
   readonly detected_at: string
 }
 
+export interface HiddenGemItem {
+  readonly brand_id: string
+  readonly brand_name: string
+  readonly brand_name_kr?: string
+  readonly company_name?: string
+  readonly category?: string
+  readonly new_leader_score: number
+  readonly growth_score: number
+  readonly cross_border_score: number
+  readonly leader_score: number
+  readonly platforms: readonly string[]
+  readonly best_rank?: number
+  readonly explanation: string
+}
+
 export interface PlatformConfig {
   readonly name: string
   readonly region: string

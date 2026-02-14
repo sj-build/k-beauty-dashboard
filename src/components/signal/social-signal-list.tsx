@@ -48,8 +48,8 @@ function getTopSignalTypes(signals: readonly SocialSignalDetail[]): string[] {
   return [...types]
 }
 
-export async function SocialSignalList() {
-  const items: SocialSignalItem[] = await getSocialSignals()
+export async function SocialSignalList({ category }: { readonly category?: string } = {}) {
+  const items: SocialSignalItem[] = await getSocialSignals(category)
 
   if (!items.length) {
     return <div className="empty-box">No social signals detected yet</div>

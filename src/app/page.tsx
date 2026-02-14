@@ -5,6 +5,7 @@ import { CategoryPills } from '@/components/layout/category-pills'
 import { RegionColumn } from '@/components/dashboard/region-column'
 import { CrossborderList } from '@/components/signal/crossborder-list'
 import { SocialSignalList } from '@/components/signal/social-signal-list'
+import { HiddenGemsList } from '@/components/signal/hidden-gems-list'
 import { CATEGORY_KEYS } from '@/lib/constants'
 
 const VALID_CATEGORY_KEYS = new Set(Object.values(CATEGORY_KEYS))
@@ -51,7 +52,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       {tab === 'risers' && <RisersTab category={category} />}
       {tab === 'new-entrants' && <NewEntrantsTab category={category} />}
       {tab === 'crossborder' && <CrossborderTab category={category} />}
-      {tab === 'social-signal' && <SocialSignalTab />}
+      {tab === 'social-signal' && <SocialSignalTab category={category} />}
+      {tab === 'hidden-gems' && <HiddenGemsTab category={category} />}
     </main>
   )
 }
@@ -145,12 +147,22 @@ function CrossborderTab({ category }: { readonly category: string }) {
   )
 }
 
-function SocialSignalTab() {
+function SocialSignalTab({ category }: { readonly category: string }) {
   return (
     <>
       <div className="section-hd">Social Signal</div>
       <div className="section-sub">AI-predicted brand trends from TikTok, YouTube, and Instagram signals</div>
-      <SocialSignalList />
+      <SocialSignalList category={category} />
+    </>
+  )
+}
+
+function HiddenGemsTab({ category }: { readonly category: string }) {
+  return (
+    <>
+      <div className="section-hd">Hidden Gems</div>
+      <div className="section-sub">Emerging indie brands with organic growth — excludes large conglomerate brands</div>
+      <HiddenGemsList category={category} />
     </>
   )
 }

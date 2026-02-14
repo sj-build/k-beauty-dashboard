@@ -18,6 +18,7 @@ import type {
   CompanyDetail,
   CompanyBrand,
   SocialSignalItem,
+  HiddenGemItem,
 } from './types'
 
 // ── Category resolution ──
@@ -1057,6 +1058,7 @@ export async function getBrandProducts(
 // ── Social Signals ──
 
 export async function getSocialSignals(
+  category?: string,
   limit: number = 20,
 ): Promise<SocialSignalItem[]> {
   try {
@@ -1066,12 +1068,39 @@ export async function getSocialSignals(
       .from('social_hypotheses')
       .select('*')
       .order('confidence', { ascending: false })
-      .limit(limit)
+      .limit(100) // fetch more, filter by category below
 
     if (error) throw error
     if (!data?.length) return []
 
-    return data.map((row) => {
+    // If category filter, look up brand categories
+    let categoryFilter: Set<string> | null = null
+    if (category) {
+      const cats = getCategoryAliases(category)
+      const entityNames = data.map((r) => r.entity_name)
+      const { data: brands } = await supabase
+        .from('brands')
+        .select('name, category')
+        .in('name', entityNames)
+
+      if (brands?.length) {
+        const matchingBrands = new Set(
+          brands
+            .filter((b) => cats.includes(b.category))
+            .map((b) => b.name.toLowerCase())
+        )
+        categoryFilter = matchingBrands
+      }
+    }
+
+    const filtered = data
+      .filter((row) => {
+        if (!categoryFilter) return true
+        return categoryFilter.has(row.entity_name.toLowerCase())
+      })
+      .slice(0, limit)
+
+    return filtered.map((row) => {
       let signals = row.signals ?? []
       if (typeof signals === 'string') {
         try { signals = JSON.parse(signals) } catch { signals = [] }
@@ -1093,6 +1122,118 @@ export async function getSocialSignals(
     })
   } catch (e) {
     console.error('Failed to get social signals:', e)
+    return []
+  }
+}
+
+// ── Hidden Gems ──
+
+/** Large conglomerates whose brands are marketing-heavy (exclude from hidden gems) */
+const TIER1_COMPANIES = new Set([
+  '아모레퍼시픽', 'LG생활건강', '클리오', '에이피알',
+  '해브앤비', '카버코리아', '난다', // acquired by global luxury
+  '로시땅그룹', // Erborian → L'Occitane
+])
+
+export async function getHiddenGems(
+  category?: string,
+  limit: number = 30,
+): Promise<HiddenGemItem[]> {
+  try {
+    const supabase = getSupabaseAdmin()
+    const { getCompanyName } = await import('./brands')
+
+    // Get latest week
+    const { data: weekData } = await supabase
+      .from('weekly_brand_metrics')
+      .select('week_start')
+      .order('week_start', { ascending: false })
+      .limit(1)
+
+    if (!weekData?.length) return []
+    const latestWeek = weekData[0].week_start
+
+    // Fetch all metrics for latest week
+    let query = supabase
+      .from('weekly_brand_metrics')
+      .select('*')
+      .eq('week_start', latestWeek)
+
+    if (category) {
+      const cats = getCategoryAliases(category)
+      query = query.in('brand_category', cats)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    if (!data?.length) return []
+
+    // Filter out Tier-1 conglomerate brands and sort by growth signal
+    const gems = data
+      .map((row) => {
+        const companyName = getCompanyName(row.brand_name) ?? undefined
+        const isTier1 = companyName ? TIER1_COMPANIES.has(companyName) : false
+        return { ...row, companyName, isTier1 }
+      })
+      .filter((row) => !row.isTier1)
+      .filter((row) =>
+        (row.new_leader_score ?? 0) > 0 ||
+        (row.growth_score ?? 0) > 0 ||
+        (row.cross_border_score ?? 0) > 0
+      )
+      .sort((a, b) => {
+        // Composite: new_leader (breakthrough) + growth (momentum) + cross_border (reach)
+        const scoreA = (a.new_leader_score ?? 0) * 2 + (a.growth_score ?? 0) * 1.5 + (a.cross_border_score ?? 0)
+        const scoreB = (b.new_leader_score ?? 0) * 2 + (b.growth_score ?? 0) * 1.5 + (b.cross_border_score ?? 0)
+        return scoreB - scoreA
+      })
+      .slice(0, limit)
+
+    return gems.map((row): HiddenGemItem => {
+      const platforms: string[] = []
+      if (row.oliveyoung_best_rank) platforms.push('OliveYoung')
+      if (row.amazon_us_best_rank) platforms.push('Amazon US')
+      if (row.amazon_ae_best_rank) platforms.push('Amazon AE')
+      if (row.sephora_us_best_rank) platforms.push('Sephora')
+      if (row.ulta_best_rank) platforms.push('Ulta')
+      if (row.noon_ae_best_rank) platforms.push('Noon')
+      if (row.target_best_rank) platforms.push('Target')
+
+      const bestRank = Math.min(
+        ...[
+          row.oliveyoung_best_rank,
+          row.amazon_us_best_rank,
+          row.amazon_ae_best_rank,
+          row.sephora_us_best_rank,
+          row.ulta_best_rank,
+          row.noon_ae_best_rank,
+          row.target_best_rank,
+        ].filter((r): r is number => r != null && r > 0)
+      )
+
+      const parts: string[] = []
+      if ((row.new_leader_score ?? 0) > 0) parts.push('New entrant with breakthrough momentum')
+      if ((row.growth_score ?? 0) > 0) parts.push(`Growth score ${row.growth_score}`)
+      if ((row.cross_border_score ?? 0) > 0) parts.push(`Present in ${platforms.length} platforms`)
+      const explanation = parts.join(' · ') || 'Emerging brand signal detected'
+
+      return {
+        brand_id: row.brand_id,
+        brand_name: row.brand_name,
+        brand_name_kr: row.brand_name_kr ?? undefined,
+        company_name: row.companyName,
+        category: row.brand_category ?? undefined,
+        new_leader_score: row.new_leader_score ?? 0,
+        growth_score: row.growth_score ?? 0,
+        cross_border_score: row.cross_border_score ?? 0,
+        leader_score: row.leader_score ?? 0,
+        platforms,
+        best_rank: bestRank === Infinity ? undefined : bestRank,
+        explanation,
+      }
+    })
+  } catch (e) {
+    console.error('Failed to get hidden gems:', e)
     return []
   }
 }
