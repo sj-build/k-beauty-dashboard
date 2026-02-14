@@ -4,6 +4,7 @@ import { NavPills } from '@/components/layout/nav-pills'
 import { CategoryPills } from '@/components/layout/category-pills'
 import { RegionColumn } from '@/components/dashboard/region-column'
 import { CrossborderList } from '@/components/signal/crossborder-list'
+import { SocialSignalList } from '@/components/signal/social-signal-list'
 import { CATEGORY_KEYS } from '@/lib/constants'
 
 const VALID_CATEGORY_KEYS = new Set(Object.values(CATEGORY_KEYS))
@@ -50,6 +51,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       {tab === 'risers' && <RisersTab category={category} />}
       {tab === 'new-entrants' && <NewEntrantsTab category={category} />}
       {tab === 'crossborder' && <CrossborderTab category={category} />}
+      {tab === 'social-signal' && <SocialSignalTab />}
     </main>
   )
 }
@@ -139,6 +141,16 @@ function CrossborderTab({ category }: { readonly category: string }) {
       <div className="section-hd">Cross-border Winners</div>
       <div className="section-sub">Brands present in 2+ regions simultaneously</div>
       <CrossborderList category={category} />
+    </>
+  )
+}
+
+function SocialSignalTab() {
+  return (
+    <>
+      <div className="section-hd">Social Signal</div>
+      <div className="section-sub">AI-predicted brand trends from TikTok, YouTube, and Instagram signals</div>
+      <SocialSignalList />
     </>
   )
 }

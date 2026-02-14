@@ -17,6 +17,7 @@ import type {
   SearchResult,
   CompanyDetail,
   CompanyBrand,
+  SocialSignalItem,
 } from './types'
 
 // ── Category resolution ──
@@ -1049,6 +1050,49 @@ export async function getBrandProducts(
     }))
   } catch (e) {
     console.error('Failed to get brand products:', e)
+    return []
+  }
+}
+
+// ── Social Signals ──
+
+export async function getSocialSignals(
+  limit: number = 20,
+): Promise<SocialSignalItem[]> {
+  try {
+    const supabase = getSupabaseAdmin()
+
+    const { data, error } = await supabase
+      .from('social_hypotheses')
+      .select('*')
+      .order('confidence', { ascending: false })
+      .limit(limit)
+
+    if (error) throw error
+    if (!data?.length) return []
+
+    return data.map((row) => {
+      let signals = row.signals ?? []
+      if (typeof signals === 'string') {
+        try { signals = JSON.parse(signals) } catch { signals = [] }
+      }
+
+      return {
+        id: row.id,
+        entity_name: row.entity_name,
+        entity_type: row.entity_type ?? 'brand',
+        prediction: row.prediction,
+        confidence: row.confidence,
+        signals,
+        status: row.status ?? 'pending',
+        actual_outcome: row.actual_outcome ?? undefined,
+        notes: row.notes ?? undefined,
+        validate_by: row.validate_by ?? undefined,
+        created_at: row.created_at,
+      }
+    })
+  } catch (e) {
+    console.error('Failed to get social signals:', e)
     return []
   }
 }

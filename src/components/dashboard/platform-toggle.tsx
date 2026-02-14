@@ -91,7 +91,7 @@ export async function PlatformToggle({
           <div className="empty-box">{emptyMessage(mode)}</div>
         ) : (
           items.map((item) => (
-            <RankRow key={`${item.rank}-${item.brand}`} item={item} region={region} />
+            <RankRow key={`${item.rank}-${item.brand}`} item={item} region={region} category={category} />
           ))
         )}
       </div>

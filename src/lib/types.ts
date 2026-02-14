@@ -155,6 +155,29 @@ export interface CompanyDetail {
   readonly market: CompanyMarket | null
 }
 
+export interface SocialSignalItem {
+  readonly id: string
+  readonly entity_name: string
+  readonly entity_type: string
+  readonly prediction: string
+  readonly confidence: number
+  readonly signals: readonly SocialSignalDetail[]
+  readonly status: string
+  readonly actual_outcome?: string
+  readonly notes?: string
+  readonly validate_by?: string
+  readonly created_at: string
+}
+
+export interface SocialSignalDetail {
+  readonly entity_name: string
+  readonly platform: string
+  readonly signal_type: string
+  readonly signal_strength: number
+  readonly change_rate: number
+  readonly detected_at: string
+}
+
 export interface PlatformConfig {
   readonly name: string
   readonly region: string

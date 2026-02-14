@@ -5,6 +5,7 @@ import { isKbeautyBrand, getCompanyName, formatPrice, formatChange } from '@/lib
 interface RankRowProps {
   readonly item: RankingItem
   readonly region?: string
+  readonly category?: string
 }
 
 function truncateTitle(title: string | undefined, maxLen: number = 45): string {
@@ -15,9 +16,12 @@ function truncateTitle(title: string | undefined, maxLen: number = 45): string {
   return `${cleaned.slice(0, maxLen)}...`
 }
 
-export function RankRow({ item, region = 'KR' }: RankRowProps) {
+const HAIRCARE_CATEGORIES = new Set(['hair', 'haircare'])
+
+export function RankRow({ item, region = 'KR', category }: RankRowProps) {
   const isKb = isKbeautyBrand(item.brand)
   const isOverseas = region !== 'KR'
+  const isHaircare = category ? HAIRCARE_CATEGORIES.has(category) : false
   const company = getCompanyName(item.brand)
   const price = formatPrice(item.price, item.currency)
   const change = formatChange(item.wow_change, item.is_new)
@@ -29,11 +33,12 @@ export function RankRow({ item, region = 'KR' }: RankRowProps) {
 
   const titleShort = truncateTitle(item.title)
 
-  // Highlight K-beauty rows in overseas markets
+  // Highlight K-beauty rows in overseas markets + haircare on all markets
+  const showKbHighlight = isKb && (isOverseas || isHaircare)
   const rowCls = [
     'rank-row',
     `delay-${delay}`,
-    isKb && isOverseas ? 'kb-row' : '',
+    showKbHighlight ? 'kb-row' : '',
   ].filter(Boolean).join(' ')
 
   return (
@@ -44,7 +49,7 @@ export function RankRow({ item, region = 'KR' }: RankRowProps) {
           <Link href={`/brand/${encodeURIComponent(item.brand)}`} className="brand-link">
             {item.brand}
           </Link>
-          {isKb && isOverseas && <span className="kb-tag">K</span>}
+          {showKbHighlight && <span className="kb-tag">K</span>}
           {subPart && <span className="subcat-label">{subPart}</span>}
         </div>
         {company && <div className="rr-company">{company}</div>}
