@@ -1346,16 +1346,19 @@ export async function getRisingStars(
         )
 
         // Organic Score calculation
+        // Social signal is discounted by organic multiplier — high ad spend companies
+        // naturally get inflated social signals, so we weight them proportionally less
         const growthScore = row.growth_score ?? 0
         const newLeaderScore = row.new_leader_score ?? 0
         const crossBorderScore = row.cross_border_score ?? 0
         const leaderScore = row.leader_score ?? 0
 
-        const socialPoints = (social?.confidence ?? 0) * 40
+        const rawSocialPoints = (social?.confidence ?? 0) * 40
+        const socialPoints = rawSocialPoints * organicMultiplier  // discount by ad spend
         const growthPoints = growthScore * 0.3
         const newLeaderPoints = newLeaderScore * 0.2
         const crossBorderPoints = crossBorderScore * 0.1
-        const organicBonus = organicMultiplier * 30
+        const organicBonus = organicMultiplier * 20  // reduced from 30 → 20 (social already discounted)
         const leaderPenalty = leaderScore > 60 ? (leaderScore - 60) * 0.3 : 0
 
         const organicScore = Math.round(
