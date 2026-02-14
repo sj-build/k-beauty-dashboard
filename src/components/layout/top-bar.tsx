@@ -60,6 +60,8 @@ export function TopBar() {
     setQuery('')
     if (result.type === 'brand') {
       window.location.href = `/brand/${encodeURIComponent(result.name)}`
+    } else if (result.type === 'company') {
+      window.location.href = `/company/${encodeURIComponent(result.name)}`
     }
   }, [])
 

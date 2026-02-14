@@ -52,7 +52,15 @@ export function RankRow({ item, region = 'KR', category }: RankRowProps) {
           {showKbHighlight && <span className="kb-tag">K</span>}
           {subPart && <span className="subcat-label">{subPart}</span>}
         </div>
-        {company && <div className="rr-company">{company}</div>}
+        {company && (
+          <Link
+            href={`/company/${encodeURIComponent(company)}`}
+            className="rr-company"
+            style={{ textDecoration: 'none' }}
+          >
+            {company}
+          </Link>
+        )}
         {titleShort && <div className="rr-title">{titleShort}</div>}
       </div>
       <div className="rr-right">

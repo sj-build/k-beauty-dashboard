@@ -895,13 +895,38 @@ export async function searchBrands(
         .ilike('legal_name', term)
         .limit(remaining)
 
+      const dbCompanyNames = new Set<string>()
       if (companies) {
         for (const c of companies) {
+          dbCompanyNames.add(c.legal_name)
           results.push({
             id: c.company_id,
             name: c.legal_name,
             type: 'company' as const,
           })
+        }
+      }
+
+      // Also search static BRAND_TO_COMPANY map for companies not in DB
+      const { getBrandsByCompany } = await import('./brands')
+      const { COMPANY_AD_DATA } = await import('./ad-expenses')
+      const searchLower = query.trim().toLowerCase()
+      const staticRemaining = limit - results.length
+      if (staticRemaining > 0) {
+        const staticCompanyNames = Object.keys(COMPANY_AD_DATA)
+        for (const companyName of staticCompanyNames) {
+          if (results.length >= limit) break
+          if (dbCompanyNames.has(companyName)) continue
+          if (companyName.toLowerCase().includes(searchLower) || companyName.includes(query.trim())) {
+            const brandCount = getBrandsByCompany(companyName).length
+            if (brandCount > 0) {
+              results.push({
+                id: `static-${companyName}`,
+                name: companyName,
+                type: 'company' as const,
+              })
+            }
+          }
         }
       }
     }

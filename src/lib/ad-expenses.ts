@@ -15,7 +15,7 @@ interface CompanyAdData {
 }
 
 /** DART 2024 사업보고서 기준. 비상장사 6개는 사업보고서 미공시 → 데이터 없음 */
-const COMPANY_AD_DATA: Readonly<Record<string, CompanyAdData>> = {
+export const COMPANY_AD_DATA: Readonly<Record<string, CompanyAdData>> = {
   '에이피알':       { adRatio: 19.6, adSpend: 1419, revenue: 7228 },
   '마녀공장':       { adRatio: 18.4, adSpend: 236,  revenue: 1279 },
   '클리오':        { adRatio: 16.1, adSpend: 565,  revenue: 3514 },
