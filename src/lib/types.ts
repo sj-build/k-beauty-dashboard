@@ -165,12 +165,17 @@ export interface SocialSignalItem {
   readonly entity_type: string
   readonly prediction: string
   readonly confidence: number
+  readonly adjusted_confidence: number  // confidence * organicMultiplier (광고비 할인)
   readonly signals: readonly SocialSignalDetail[]
   readonly status: string
   readonly actual_outcome?: string
   readonly notes?: string
   readonly validate_by?: string
   readonly created_at: string
+  readonly ad_level: 'high' | 'mid' | 'low' | 'unknown'
+  readonly ad_ratio?: number
+  readonly ad_spend?: number  // 억원
+  readonly company_name?: string
 }
 
 export interface SocialSignalDetail {
@@ -182,46 +187,6 @@ export interface SocialSignalDetail {
   readonly detected_at: string
 }
 
-export interface HiddenGemItem {
-  readonly brand_id: string
-  readonly brand_name: string
-  readonly brand_name_kr?: string
-  readonly company_name?: string
-  readonly category?: string
-  readonly new_leader_score: number
-  readonly growth_score: number
-  readonly cross_border_score: number
-  readonly leader_score: number
-  readonly platforms: readonly string[]
-  readonly best_rank?: number
-  readonly explanation: string
-}
-
-export interface RisingStarItem {
-  readonly brand_name: string
-  readonly brand_name_kr?: string
-  readonly company_name?: string
-  readonly brand_id: string
-  // Commerce scores
-  readonly growth_score: number
-  readonly new_leader_score: number
-  readonly cross_border_score: number
-  readonly leader_score: number
-  readonly platforms: readonly string[]
-  readonly best_rank?: number
-  // Social signal
-  readonly social_confidence?: number
-  readonly social_prediction?: string
-  readonly social_platforms: readonly string[]
-  readonly social_notes?: string
-  // Ad expense
-  readonly ad_ratio?: number
-  readonly ad_spend?: number  // 억원
-  readonly ad_level: 'high' | 'mid' | 'low' | 'unknown'
-  // Composite
-  readonly organic_score: number
-  readonly explanation: string
-}
 
 export interface PlatformConfig {
   readonly name: string

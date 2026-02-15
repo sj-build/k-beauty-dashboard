@@ -1,19 +1,12 @@
 import Link from 'next/link'
 import type { SocialSignalItem, SocialSignalDetail } from '@/lib/types'
-import { isKbeautyBrand, getCompanyName } from '@/lib/brands'
+import { isKbeautyBrand } from '@/lib/brands'
 import { getSocialSignals } from '@/lib/queries'
-import { getAdRatio, getAdLevel } from '@/lib/ad-expenses'
 
 const PREDICTION_LABELS: Readonly<Record<string, string>> = {
   will_rise_significantly: 'Strong Rise',
   will_rise: 'Rise',
   will_rise_slightly: 'Slight Rise',
-}
-
-const PREDICTION_LABELS_KR: Readonly<Record<string, string>> = {
-  will_rise_significantly: '급상승 예측',
-  will_rise: '상승 예측',
-  will_rise_slightly: '소폭 상승 예측',
 }
 
 const PLATFORM_ICONS: Readonly<Record<string, string>> = {
@@ -49,6 +42,52 @@ function getTopSignalTypes(signals: readonly SocialSignalDetail[]): string[] {
   return [...types]
 }
 
+function adLevelBadge(adLevel: string, adRatio?: number, adSpend?: number) {
+  if (adLevel === 'low') {
+    return (
+      <span style={{
+        fontSize: '0.58rem',
+        fontWeight: 700,
+        padding: '1px 6px',
+        borderRadius: '4px',
+        background: 'rgba(5, 150, 105, 0.1)',
+        color: '#059669',
+      }}>
+        Organic{adRatio != null ? ` · Ad ${adRatio}%` : ''}
+      </span>
+    )
+  }
+  if (adLevel === 'high') {
+    return (
+      <span style={{
+        fontSize: '0.58rem',
+        fontWeight: 700,
+        padding: '1px 6px',
+        borderRadius: '4px',
+        background: 'rgba(225, 29, 72, 0.08)',
+        color: '#e11d48',
+      }}>
+        Paid · Ad {adRatio ?? '?'}%{adSpend != null ? ` · ${adSpend.toLocaleString()}B` : ''}
+      </span>
+    )
+  }
+  if (adRatio != null) {
+    return (
+      <span style={{
+        fontSize: '0.56rem',
+        fontWeight: 600,
+        padding: '1px 5px',
+        borderRadius: '3px',
+        background: 'rgba(217, 119, 6, 0.08)',
+        color: '#d97706',
+      }}>
+        Ad {adRatio}%
+      </span>
+    )
+  }
+  return null
+}
+
 export async function SocialSignalList({ category }: { readonly category?: string } = {}) {
   const items: SocialSignalItem[] = await getSocialSignals(category)
 
@@ -63,26 +102,38 @@ export async function SocialSignalList({ category }: { readonly category?: strin
         const platforms = getTopPlatforms(item.signals)
         const signalTypes = getTopSignalTypes(item.signals)
         const predLabel = PREDICTION_LABELS[item.prediction] ?? item.prediction
-        const companyName = getCompanyName(item.entity_name)
-        const adRatio = companyName ? getAdRatio(item.entity_name) : null
-        const adLevel = companyName ? getAdLevel(companyName) : 'unknown'
-        const confidenceColor = item.confidence >= 0.8
+        const isDiscounted = item.adjusted_confidence < item.confidence
+        const adjColor = item.adjusted_confidence >= 0.4
           ? 'var(--accent-emerald)'
-          : item.confidence >= 0.7
+          : item.adjusted_confidence >= 0.25
             ? 'var(--accent-amber)'
             : 'var(--text-tertiary)'
 
         return (
           <div key={item.id} className={`signal-card animate-in delay-${Math.min(idx + 1, 10)}`}>
+            {/* Adjusted confidence as main metric */}
             <div className="signal-rank" style={{
-              background: item.confidence >= 0.8
+              background: item.adjusted_confidence >= 0.4
                 ? 'rgba(5, 150, 105, 0.08)'
                 : 'rgba(217, 119, 6, 0.08)',
-              color: confidenceColor,
+              color: adjColor,
               fontSize: '0.7rem',
               fontWeight: 700,
+              minWidth: '42px',
+              textAlign: 'center',
             }}>
-              {formatConfidence(item.confidence)}
+              {formatConfidence(item.adjusted_confidence)}
+              {isDiscounted && (
+                <div style={{
+                  fontSize: '0.5rem',
+                  fontWeight: 500,
+                  color: 'var(--text-quaternary)',
+                  textDecoration: 'line-through',
+                  marginTop: '1px',
+                }}>
+                  {formatConfidence(item.confidence)}
+                </div>
+              )}
             </div>
             <div className="signal-info">
               <div className="signal-brand">
@@ -95,61 +146,26 @@ export async function SocialSignalList({ category }: { readonly category?: strin
                   fontWeight: 600,
                   padding: '1px 6px',
                   borderRadius: '4px',
-                  background: item.confidence >= 0.8
+                  background: item.adjusted_confidence >= 0.4
                     ? 'rgba(5, 150, 105, 0.1)'
                     : 'rgba(217, 119, 6, 0.1)',
-                  color: confidenceColor,
+                  color: adjColor,
                 }}>
                   {predLabel}
                 </span>
-                {adLevel === 'low' && (
-                  <span style={{
-                    fontSize: '0.58rem',
-                    fontWeight: 700,
-                    padding: '1px 6px',
-                    borderRadius: '4px',
-                    background: 'rgba(5, 150, 105, 0.1)',
-                    color: '#059669',
-                  }}>
-                    Organic
-                  </span>
-                )}
-                {adLevel === 'high' && (
-                  <span style={{
-                    fontSize: '0.58rem',
-                    fontWeight: 700,
-                    padding: '1px 6px',
-                    borderRadius: '4px',
-                    background: 'rgba(225, 29, 72, 0.08)',
-                    color: '#e11d48',
-                  }}>
-                    Paid
-                  </span>
-                )}
-                {adRatio != null && adLevel !== 'low' && adLevel !== 'high' && (
-                  <span style={{
-                    fontSize: '0.56rem',
-                    fontWeight: 600,
-                    padding: '1px 5px',
-                    borderRadius: '3px',
-                    background: 'rgba(217, 119, 6, 0.08)',
-                    color: '#d97706',
-                  }}>
-                    Ad {adRatio}%
-                  </span>
-                )}
+                {adLevelBadge(item.ad_level, item.ad_ratio, item.ad_spend)}
               </div>
-              {companyName && (
+              {item.company_name && (
                 <div style={{ marginTop: '1px' }}>
                   <Link
-                    href={`/company/${encodeURIComponent(companyName)}`}
+                    href={`/company/${encodeURIComponent(item.company_name)}`}
                     style={{
                       fontSize: '0.6rem',
                       color: 'var(--text-quaternary)',
                       textDecoration: 'none',
                     }}
                   >
-                    {companyName}
+                    {item.company_name}
                   </Link>
                 </div>
               )}

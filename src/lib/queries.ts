@@ -18,8 +18,6 @@ import type {
   CompanyDetail,
   CompanyBrand,
   SocialSignalItem,
-  HiddenGemItem,
-  RisingStarItem,
 } from './types'
 
 // ── Category resolution ──
@@ -1093,17 +1091,19 @@ export async function getSocialSignals(
 ): Promise<SocialSignalItem[]> {
   try {
     const supabase = getSupabaseAdmin()
+    const { getCompanyName } = await import('./brands')
+    const { getOrganicMultiplier, getAdLevel, getAdRatioByCompany, getAdSpend } = await import('./ad-expenses')
 
     const { data, error } = await supabase
       .from('social_hypotheses')
       .select('*')
       .order('confidence', { ascending: false })
-      .limit(100) // fetch more, filter by category below
+      .limit(100)
 
     if (error) throw error
     if (!data?.length) return []
 
-    // If category filter, look up brand categories
+    // Category filter
     let categoryFilter: Set<string> | null = null
     if (category) {
       const cats = getCategoryAliases(category)
@@ -1114,12 +1114,11 @@ export async function getSocialSignals(
         .in('name', entityNames)
 
       if (brands?.length) {
-        const matchingBrands = new Set(
+        categoryFilter = new Set(
           brands
             .filter((b) => cats.includes(b.category))
             .map((b) => b.name.toLowerCase())
         )
-        categoryFilter = matchingBrands
       }
     }
 
@@ -1128,13 +1127,23 @@ export async function getSocialSignals(
         if (!categoryFilter) return true
         return categoryFilter.has(row.entity_name.toLowerCase())
       })
-      .slice(0, limit)
 
-    return filtered.map((row) => {
+    // Apply ad expense discount and sort by adjusted confidence
+    const items = filtered.map((row) => {
       let signals = row.signals ?? []
       if (typeof signals === 'string') {
         try { signals = JSON.parse(signals) } catch { signals = [] }
       }
+
+      const companyName = getCompanyName(row.entity_name) ?? undefined
+      const organicMultiplier = companyName ? getOrganicMultiplier(companyName) : 0.5
+      const adLevel = companyName ? getAdLevel(companyName) : 'unknown' as const
+      const adRatio = companyName ? getAdRatioByCompany(companyName) : undefined
+      const adSpend = companyName ? getAdSpend(companyName) : undefined
+
+      // Adjusted confidence: raw confidence discounted by ad spend
+      // High ad spenders get lower adjusted confidence (their social signals may be paid)
+      const adjustedConfidence = Math.round(row.confidence * organicMultiplier * 100) / 100
 
       return {
         id: row.id,
@@ -1142,298 +1151,26 @@ export async function getSocialSignals(
         entity_type: row.entity_type ?? 'brand',
         prediction: row.prediction,
         confidence: row.confidence,
+        adjusted_confidence: adjustedConfidence,
         signals,
         status: row.status ?? 'pending',
         actual_outcome: row.actual_outcome ?? undefined,
         notes: row.notes ?? undefined,
         validate_by: row.validate_by ?? undefined,
         created_at: row.created_at,
+        ad_level: adLevel,
+        ad_ratio: adRatio ?? undefined,
+        ad_spend: adSpend ?? undefined,
+        company_name: companyName,
       }
     })
+
+    // Sort by adjusted confidence (ad-discounted) descending
+    return items
+      .sort((a, b) => b.adjusted_confidence - a.adjusted_confidence)
+      .slice(0, limit)
   } catch (e) {
     console.error('Failed to get social signals:', e)
-    return []
-  }
-}
-
-// ── Hidden Gems ──
-
-/** Large conglomerates whose brands are marketing-heavy (exclude from hidden gems) */
-const TIER1_COMPANIES = new Set([
-  '아모레퍼시픽', 'LG생활건강', '클리오', '에이피알',
-  '해브앤비', '카버코리아', '난다', // acquired by global luxury
-  '로시땅그룹', // Erborian → L'Occitane
-])
-
-export async function getHiddenGems(
-  category?: string,
-  limit: number = 30,
-): Promise<HiddenGemItem[]> {
-  try {
-    const supabase = getSupabaseAdmin()
-    const { getCompanyName } = await import('./brands')
-
-    // Get latest week
-    const weeks = await getAvailableWeeks()
-    if (!weeks.length) return []
-    const latestWeek = weeks[0]
-
-    // Fetch metrics with brand join
-    let query = supabase
-      .from('weekly_brand_metrics')
-      .select(`
-        brand_id, leader_score, growth_score, new_leader_score, cross_border_score,
-        oliveyoung_best_rank, amazon_us_best_rank, amazon_ae_best_rank,
-        sephora_us_best_rank, ulta_best_rank, noon_ae_best_rank,
-        global_best_rank, is_new_entrant, markets_present,
-        brands!inner(name, name_kr, category)
-      `)
-      .eq('week_start', latestWeek)
-      .or('new_leader_score.gt.0,growth_score.gt.0,cross_border_score.gt.0')
-
-    if (category) {
-      const dbCat = resolveCategory(category)
-      query = query.eq('brands.category', dbCat)
-    }
-
-    const { data, error } = await query
-    if (error) throw error
-    if (!data?.length) return []
-
-    // Filter out Tier-1 conglomerate brands and sort by growth signal
-    const gems = data
-      .map((row) => {
-        const brand = row.brands as unknown as { name: string; name_kr: string | null; category: string }
-        const companyName = getCompanyName(brand.name) ?? undefined
-        const isTier1 = companyName ? TIER1_COMPANIES.has(companyName) : false
-        return { ...row, brandName: brand.name, brandNameKr: brand.name_kr, brandCategory: brand.category, companyName, isTier1 }
-      })
-      .filter((row) => !row.isTier1)
-      .sort((a, b) => {
-        const scoreA = (a.new_leader_score ?? 0) * 2 + (a.growth_score ?? 0) * 1.5 + (a.cross_border_score ?? 0)
-        const scoreB = (b.new_leader_score ?? 0) * 2 + (b.growth_score ?? 0) * 1.5 + (b.cross_border_score ?? 0)
-        return scoreB - scoreA
-      })
-      .slice(0, limit)
-
-    return gems.map((row): HiddenGemItem => {
-      const platforms: string[] = []
-      if (row.oliveyoung_best_rank) platforms.push('OliveYoung')
-      if (row.amazon_us_best_rank) platforms.push('Amazon US')
-      if (row.amazon_ae_best_rank) platforms.push('Amazon AE')
-      if (row.sephora_us_best_rank) platforms.push('Sephora')
-      if (row.ulta_best_rank) platforms.push('Ulta')
-      if (row.noon_ae_best_rank) platforms.push('Noon')
-
-      const bestRank = Math.min(
-        ...[
-          row.oliveyoung_best_rank,
-          row.amazon_us_best_rank,
-          row.amazon_ae_best_rank,
-          row.sephora_us_best_rank,
-          row.ulta_best_rank,
-          row.noon_ae_best_rank,
-        ].filter((r): r is number => r != null && r > 0)
-      )
-
-      const parts: string[] = []
-      if ((row.new_leader_score ?? 0) > 0) parts.push('New entrant with breakthrough momentum')
-      if ((row.growth_score ?? 0) > 0) parts.push(`Growth score ${row.growth_score}`)
-      if ((row.cross_border_score ?? 0) > 0) parts.push(`Present in ${platforms.length} platforms`)
-      const explanation = parts.join(' · ') || 'Emerging brand signal detected'
-
-      return {
-        brand_id: row.brand_id,
-        brand_name: row.brandName,
-        brand_name_kr: row.brandNameKr ?? undefined,
-        company_name: row.companyName,
-        category: row.brandCategory ?? undefined,
-        new_leader_score: row.new_leader_score ?? 0,
-        growth_score: row.growth_score ?? 0,
-        cross_border_score: row.cross_border_score ?? 0,
-        leader_score: row.leader_score ?? 0,
-        platforms,
-        best_rank: bestRank === Infinity ? undefined : bestRank,
-        explanation,
-      }
-    })
-  } catch (e) {
-    console.error('Failed to get hidden gems:', e)
-    return []
-  }
-}
-
-// ── Rising Stars ──
-
-export async function getRisingStars(
-  category?: string,
-  limit: number = 30,
-): Promise<RisingStarItem[]> {
-  try {
-    const supabase = getSupabaseAdmin()
-    const { getCompanyName } = await import('./brands')
-    const { getOrganicMultiplier, getAdLevel, getAdRatioByCompany, getAdSpend } = await import('./ad-expenses')
-
-    // Get latest week
-    const weeks = await getAvailableWeeks()
-    if (!weeks.length) return []
-    const latestWeek = weeks[0]
-
-    // Fetch metrics with brand join (same pattern as getHiddenGems)
-    let query = supabase
-      .from('weekly_brand_metrics')
-      .select(`
-        brand_id, leader_score, growth_score, new_leader_score, cross_border_score,
-        oliveyoung_best_rank, amazon_us_best_rank, amazon_ae_best_rank,
-        sephora_us_best_rank, ulta_best_rank, noon_ae_best_rank,
-        global_best_rank, is_new_entrant, markets_present,
-        brands!inner(name, name_kr, category)
-      `)
-      .eq('week_start', latestWeek)
-      .or('growth_score.gt.0,new_leader_score.gt.0,cross_border_score.gt.0')
-
-    if (category) {
-      const dbCat = resolveCategory(category)
-      query = query.eq('brands.category', dbCat)
-    }
-
-    const { data: metricsData, error: metricsErr } = await query
-    if (metricsErr) throw metricsErr
-    if (!metricsData?.length) return []
-
-    // Batch load social hypotheses
-    const entityNames = metricsData.map((row) => {
-      const brand = row.brands as unknown as { name: string }
-      return brand.name
-    })
-
-    const { data: socialData } = await supabase
-      .from('social_hypotheses')
-      .select('entity_name, prediction, confidence, signals, notes')
-      .in('entity_name', entityNames)
-
-    const socialMap = new Map<string, {
-      prediction: string
-      confidence: number
-      platforms: string[]
-      notes?: string
-    }>()
-
-    if (socialData) {
-      for (const s of socialData) {
-        let signals: Array<{ platform?: string }> = []
-        if (s.signals) {
-          try {
-            signals = typeof s.signals === 'string' ? JSON.parse(s.signals) : s.signals
-          } catch { /* ignore */ }
-        }
-        const platforms = [...new Set(
-          signals.filter((sig) => sig.platform).map((sig) => sig.platform as string)
-        )]
-        socialMap.set(s.entity_name, {
-          prediction: s.prediction,
-          confidence: s.confidence,
-          platforms,
-          notes: s.notes ?? undefined,
-        })
-      }
-    }
-
-    // Build rising star items
-    const items = metricsData
-      .map((row) => {
-        const brand = row.brands as unknown as { name: string; name_kr: string | null; category: string }
-        const companyName = getCompanyName(brand.name) ?? undefined
-        const isTier1 = companyName ? TIER1_COMPANIES.has(companyName) : false
-        if (isTier1) return null
-
-        const organicMultiplier = companyName ? getOrganicMultiplier(companyName) : 0.5
-        const adLevel = companyName ? getAdLevel(companyName) : 'unknown' as const
-        const adRatio = companyName ? getAdRatioByCompany(companyName) : undefined
-        const adSpend = companyName ? getAdSpend(companyName) : undefined
-
-        const social = socialMap.get(brand.name)
-
-        // Commerce platforms
-        const platforms: string[] = []
-        if (row.oliveyoung_best_rank) platforms.push('OliveYoung')
-        if (row.amazon_us_best_rank) platforms.push('Amazon US')
-        if (row.amazon_ae_best_rank) platforms.push('Amazon AE')
-        if (row.sephora_us_best_rank) platforms.push('Sephora')
-        if (row.ulta_best_rank) platforms.push('Ulta')
-        if (row.noon_ae_best_rank) platforms.push('Noon')
-
-        const bestRank = Math.min(
-          ...[
-            row.oliveyoung_best_rank,
-            row.amazon_us_best_rank,
-            row.amazon_ae_best_rank,
-            row.sephora_us_best_rank,
-            row.ulta_best_rank,
-            row.noon_ae_best_rank,
-          ].filter((r): r is number => r != null && r > 0)
-        )
-
-        // Organic Score calculation
-        // Social signal is discounted by organic multiplier — high ad spend companies
-        // naturally get inflated social signals, so we weight them proportionally less
-        const growthScore = row.growth_score ?? 0
-        const newLeaderScore = row.new_leader_score ?? 0
-        const crossBorderScore = row.cross_border_score ?? 0
-        const leaderScore = row.leader_score ?? 0
-
-        const rawSocialPoints = (social?.confidence ?? 0) * 40
-        const socialPoints = rawSocialPoints * organicMultiplier  // discount by ad spend
-        const growthPoints = growthScore * 0.3
-        const newLeaderPoints = newLeaderScore * 0.2
-        const crossBorderPoints = crossBorderScore * 0.1
-        const organicBonus = organicMultiplier * 20  // reduced from 30 → 20 (social already discounted)
-        const leaderPenalty = leaderScore > 60 ? (leaderScore - 60) * 0.3 : 0
-
-        const organicScore = Math.round(
-          Math.max(0, Math.min(100,
-            socialPoints + growthPoints + newLeaderPoints + crossBorderPoints + organicBonus - leaderPenalty
-          ))
-        )
-
-        // Build explanation
-        const parts: string[] = []
-        if (adLevel === 'low') parts.push(`Low ad spend (${adRatio ?? '?'}%, ${adSpend ?? '?'}억)`)
-        if (social && social.confidence >= 0.7) parts.push(`Strong social signal (${Math.round(social.confidence * 100)}%)`)
-        if (growthScore > 0) parts.push(`Growth ${growthScore}`)
-        if (newLeaderScore > 0) parts.push('New entrant momentum')
-        if (platforms.length >= 3) parts.push(`${platforms.length} platforms`)
-        const explanation = parts.join(' · ') || 'Emerging organic growth signal'
-
-        return {
-          brand_id: row.brand_id,
-          brand_name: brand.name,
-          brand_name_kr: brand.name_kr ?? undefined,
-          company_name: companyName,
-          growth_score: growthScore,
-          new_leader_score: newLeaderScore,
-          cross_border_score: crossBorderScore,
-          leader_score: leaderScore,
-          platforms,
-          best_rank: bestRank === Infinity ? undefined : bestRank,
-          social_confidence: social?.confidence,
-          social_prediction: social?.prediction,
-          social_platforms: social?.platforms ?? [],
-          social_notes: social?.notes,
-          ad_ratio: adRatio ?? undefined,
-          ad_spend: adSpend ?? undefined,
-          ad_level: adLevel,
-          organic_score: organicScore,
-          explanation,
-        } satisfies RisingStarItem
-      })
-      .filter((item): item is NonNullable<typeof item> => item !== null)
-      .sort((a, b) => b.organic_score - a.organic_score)
-      .slice(0, limit)
-
-    return items
-  } catch (e) {
-    console.error('Failed to get rising stars:', e)
     return []
   }
 }
