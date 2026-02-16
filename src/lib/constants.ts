@@ -78,6 +78,7 @@ export const MENU_ITEMS = [
 
 export const COMING_SOON_ITEMS = [
   { label: 'Subcategory', labelKr: '서브카테고리' },
+  { label: 'Hidden Gem', labelKr: '숨은 보석' },
 ] as const
 
 export const CATEGORY_ALIASES: Readonly<Record<string, readonly string[]>> = {

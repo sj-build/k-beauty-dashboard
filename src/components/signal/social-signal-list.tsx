@@ -1,18 +1,12 @@
 import Link from 'next/link'
-import type { SocialSignalItem, SocialSignalDetail } from '@/lib/types'
+import type { SocialSignalItem, PlatformDiagnostic } from '@/lib/types'
 import { isKbeautyBrand } from '@/lib/brands'
 import { getSocialSignals } from '@/lib/queries'
 
-const PREDICTION_LABELS: Readonly<Record<string, string>> = {
-  will_rise_significantly: 'Strong Rise',
-  will_rise: 'Rise',
-  will_rise_slightly: 'Slight Rise',
-}
-
-const PLATFORM_ICONS: Readonly<Record<string, string>> = {
-  tiktok: 'TT',
-  youtube: 'YT',
-  instagram: 'IG',
+const PLATFORM_LABELS: Readonly<Record<string, string>> = {
+  tiktok: 'TikTok',
+  youtube: 'YouTube',
+  instagram: 'Instagram',
 }
 
 const SIGNAL_TYPE_LABELS: Readonly<Record<string, string>> = {
@@ -22,70 +16,100 @@ const SIGNAL_TYPE_LABELS: Readonly<Record<string, string>> = {
   influencer_pickup: 'Influencer',
 }
 
-function formatConfidence(confidence: number): string {
-  return `${Math.round(confidence * 100)}%`
+const MOMENTUM_CONFIG: Readonly<Record<string, { label: string; color: string; bg: string }>> = {
+  hot: { label: 'Hot', color: 'var(--accent-rose)', bg: 'var(--accent-rose-dim)' },
+  warm: { label: 'Warm', color: 'var(--accent-amber)', bg: 'var(--accent-amber-dim)' },
+  emerging: { label: 'Emerging', color: 'var(--accent-emerald)', bg: 'var(--accent-emerald-dim)' },
+  quiet: { label: 'Quiet', color: 'var(--text-quaternary)', bg: 'var(--bg-secondary)' },
 }
 
-function getTopPlatforms(signals: readonly SocialSignalDetail[]): string[] {
-  const platforms = new Set<string>()
-  for (const s of signals) {
-    if (s.platform) platforms.add(s.platform)
-  }
-  return [...platforms]
+function formatNumber(n: number | undefined): string {
+  if (n == null || n === 0) return '0'
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
+  return String(Math.round(n))
 }
 
-function getTopSignalTypes(signals: readonly SocialSignalDetail[]): string[] {
-  const types = new Set<string>()
-  for (const s of signals) {
-    if (s.signal_type) types.add(s.signal_type)
-  }
-  return [...types]
+function formatChange(pct: number | undefined): string | null {
+  if (pct == null || pct === 0) return null
+  const sign = pct > 0 ? '+' : ''
+  return `${sign}${Math.round(pct)}%`
 }
 
 function adLevelBadge(adLevel: string, adRatio?: number, adSpend?: number) {
   if (adLevel === 'low') {
     return (
-      <span style={{
-        fontSize: '0.58rem',
-        fontWeight: 700,
-        padding: '1px 6px',
-        borderRadius: '4px',
-        background: 'rgba(5, 150, 105, 0.1)',
-        color: '#059669',
-      }}>
+      <span className="ss-ad-badge ss-ad-organic">
         Organic{adRatio != null ? ` · Ad ${adRatio}%` : ''}
       </span>
     )
   }
   if (adLevel === 'high') {
     return (
-      <span style={{
-        fontSize: '0.58rem',
-        fontWeight: 700,
-        padding: '1px 6px',
-        borderRadius: '4px',
-        background: 'rgba(225, 29, 72, 0.08)',
-        color: '#e11d48',
-      }}>
+      <span className="ss-ad-badge ss-ad-paid">
         Paid · Ad {adRatio ?? '?'}%{adSpend != null ? ` · ${adSpend.toLocaleString()}B` : ''}
       </span>
     )
   }
   if (adRatio != null) {
     return (
-      <span style={{
-        fontSize: '0.56rem',
-        fontWeight: 600,
-        padding: '1px 5px',
-        borderRadius: '3px',
-        background: 'rgba(217, 119, 6, 0.08)',
-        color: '#d97706',
-      }}>
+      <span className="ss-ad-badge ss-ad-mid">
         Ad {adRatio}%
       </span>
     )
   }
   return null
+}
+
+function PlatformBreakdownRow({
+  diagnostic,
+}: {
+  readonly diagnostic: PlatformDiagnostic
+}) {
+  const platformLabel = PLATFORM_LABELS[diagnostic.platform] ?? diagnostic.platform
+  const saveChange = formatChange(diagnostic.save_change_pct)
+  const shareChange = formatChange(diagnostic.share_change_pct)
+  const viewChange = formatChange(diagnostic.view_change_pct)
+  const hasMetrics = diagnostic.total_views != null
+
+  // Fallback: if no raw_metrics, show signal type badges
+  if (!hasMetrics) {
+    return (
+      <div className="ss-platform-row">
+        <span className="ss-platform-name">{platformLabel}:</span>
+        <div className="ss-metric-group">
+          {diagnostic.signal_types.map((t) => (
+            <span key={t} className="ss-type-badge">
+              {SIGNAL_TYPE_LABELS[t] ?? t}
+            </span>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="ss-platform-row">
+      <span className="ss-platform-name">{platformLabel}:</span>
+      <div className="ss-metric-group">
+        {(diagnostic.total_saves ?? 0) > 0 && (
+          <span className={saveChange ? 'ss-metric' : 'ss-metric-dim'}>
+            Saves{saveChange ? ` ${saveChange}` : ` ${formatNumber(diagnostic.total_saves)}`}
+          </span>
+        )}
+        {(diagnostic.total_shares ?? 0) > 0 && (
+          <span className={shareChange ? 'ss-metric' : 'ss-metric-dim'}>
+            Shares{shareChange ? ` ${shareChange}` : ` ${formatNumber(diagnostic.total_shares)}`}
+          </span>
+        )}
+        {(diagnostic.total_views ?? 0) > 0 && (
+          <span className="ss-metric-dim">
+            Views {formatNumber(diagnostic.total_views)}{viewChange ? ` (${viewChange})` : ''}
+          </span>
+        )}
+      </div>
+    </div>
+  )
 }
 
 export async function SocialSignalList({ category }: { readonly category?: string } = {}) {
@@ -99,41 +123,15 @@ export async function SocialSignalList({ category }: { readonly category?: strin
     <div className="space-y-3">
       {items.map((item, idx) => {
         const isKb = isKbeautyBrand(item.entity_name)
-        const platforms = getTopPlatforms(item.signals)
-        const signalTypes = getTopSignalTypes(item.signals)
-        const predLabel = PREDICTION_LABELS[item.prediction] ?? item.prediction
-        const isDiscounted = item.adjusted_confidence < item.confidence
-        const adjColor = item.adjusted_confidence >= 0.4
-          ? 'var(--accent-emerald)'
-          : item.adjusted_confidence >= 0.25
-            ? 'var(--accent-amber)'
-            : 'var(--text-tertiary)'
+        const momentum = MOMENTUM_CONFIG[item.momentum_level ?? 'quiet']
+        const breakdown = item.platform_breakdown ?? []
+        const summary = item.diagnostic_summary ?? ''
 
         return (
           <div key={item.id} className={`signal-card animate-in delay-${Math.min(idx + 1, 10)}`}>
-            {/* Adjusted confidence as main metric */}
-            <div className="signal-rank" style={{
-              background: item.adjusted_confidence >= 0.4
-                ? 'rgba(5, 150, 105, 0.08)'
-                : 'rgba(217, 119, 6, 0.08)',
-              color: adjColor,
-              fontSize: '0.7rem',
-              fontWeight: 700,
-              minWidth: '42px',
-              textAlign: 'center',
-            }}>
-              {formatConfidence(item.adjusted_confidence)}
-              {isDiscounted && (
-                <div style={{
-                  fontSize: '0.5rem',
-                  fontWeight: 500,
-                  color: 'var(--text-quaternary)',
-                  textDecoration: 'line-through',
-                  marginTop: '1px',
-                }}>
-                  {formatConfidence(item.confidence)}
-                </div>
-              )}
+            {/* Momentum indicator */}
+            <div className="ss-momentum" style={{ background: momentum.bg, color: momentum.color }}>
+              {momentum.label}
             </div>
             <div className="signal-info">
               <div className="signal-brand">
@@ -141,18 +139,6 @@ export async function SocialSignalList({ category }: { readonly category?: strin
                 <Link href={`/brand/${encodeURIComponent(item.entity_name)}`} className="brand-link">
                   {item.entity_name}
                 </Link>
-                <span style={{
-                  fontSize: '0.65rem',
-                  fontWeight: 600,
-                  padding: '1px 6px',
-                  borderRadius: '4px',
-                  background: item.adjusted_confidence >= 0.4
-                    ? 'rgba(5, 150, 105, 0.1)'
-                    : 'rgba(217, 119, 6, 0.1)',
-                  color: adjColor,
-                }}>
-                  {predLabel}
-                </span>
                 {adLevelBadge(item.ad_level, item.ad_ratio, item.ad_spend)}
               </div>
               {item.company_name && (
@@ -169,21 +155,20 @@ export async function SocialSignalList({ category }: { readonly category?: strin
                   </Link>
                 </div>
               )}
-              <div className="signal-explain">
-                {item.notes ?? `${predLabel} predicted`}
-              </div>
-              <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
-                {platforms.map((p) => (
-                  <span key={p} className="ss-platform-badge">
-                    {PLATFORM_ICONS[p] ?? p}
-                  </span>
-                ))}
-                {signalTypes.map((t) => (
-                  <span key={t} className="ss-type-badge">
-                    {SIGNAL_TYPE_LABELS[t] ?? t}
-                  </span>
-                ))}
-              </div>
+
+              {/* Platform breakdown rows */}
+              {breakdown.length > 0 && (
+                <div className="ss-breakdown">
+                  {breakdown.map((d) => (
+                    <PlatformBreakdownRow key={d.platform} diagnostic={d} />
+                  ))}
+                </div>
+              )}
+
+              {/* Diagnostic summary */}
+              {summary && (
+                <div className="ss-diagnostic">{summary}</div>
+              )}
             </div>
             <div className="signal-meta">
               {item.validate_by && (

@@ -176,6 +176,36 @@ export interface SocialSignalItem {
   readonly ad_ratio?: number
   readonly ad_spend?: number  // 억원
   readonly company_name?: string
+  readonly momentum_level?: 'hot' | 'warm' | 'emerging' | 'quiet'
+  readonly momentum_score?: number
+  readonly platform_breakdown?: readonly PlatformDiagnostic[]
+  readonly diagnostic_summary?: string
+}
+
+export interface RawMetrics {
+  readonly total_views?: number
+  readonly total_saves?: number
+  readonly total_shares?: number
+  readonly total_likes?: number
+  readonly total_comments?: number
+  readonly avg_views?: number
+  readonly avg_saves?: number
+  readonly avg_shares?: number
+  readonly view_change_pct?: number
+  readonly save_change_pct?: number
+  readonly share_change_pct?: number
+  readonly mention_count?: number
+}
+
+export interface PlatformDiagnostic {
+  readonly platform: string
+  readonly total_views?: number
+  readonly total_saves?: number
+  readonly total_shares?: number
+  readonly save_change_pct?: number
+  readonly share_change_pct?: number
+  readonly view_change_pct?: number
+  readonly signal_types: readonly string[]
 }
 
 export interface SocialSignalDetail {
@@ -185,6 +215,7 @@ export interface SocialSignalDetail {
   readonly signal_strength: number
   readonly change_rate: number
   readonly detected_at: string
+  readonly metadata?: { readonly raw_metrics?: RawMetrics }
 }
 
 

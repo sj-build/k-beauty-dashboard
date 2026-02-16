@@ -163,7 +163,7 @@ function SocialSignalTab({ category }: { readonly category: string }) {
   return (
     <>
       <div className="section-hd">Social Signal</div>
-      <div className="section-sub">AI-predicted brand trends — confidence adjusted by ad spend ratio</div>
+      <div className="section-sub">What&apos;s happening on social platforms right now</div>
       <SocialSignalList category={category} />
     </>
   )

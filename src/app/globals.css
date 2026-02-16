@@ -665,19 +665,99 @@ body {
 }
 
 /* ================================================================
-   Social Signal badges
+   Social Signal — Diagnostic UI
    ================================================================ */
-.ss-platform-badge {
+.ss-momentum {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  font-size: 0.65rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+
+.ss-breakdown {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ss-platform-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+}
+.ss-platform-name {
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 70px;
+  flex-shrink: 0;
+}
+.ss-metric-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.ss-metric {
+  font-size: 0.68rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  color: var(--accent-emerald);
+}
+.ss-metric-dim {
+  font-size: 0.68rem;
+  font-weight: 500;
+  font-family: var(--font-mono);
+  color: var(--text-quaternary);
+}
+.ss-diagnostic {
+  margin-top: 4px;
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+/* Ad level badges */
+.ss-ad-badge {
   display: inline-flex;
   align-items: center;
   font-size: 0.58rem;
   font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+.ss-ad-organic {
+  background: rgba(5, 150, 105, 0.1);
+  color: #059669;
+}
+[data-theme="dark"] .ss-ad-organic {
+  color: var(--accent-emerald);
+}
+.ss-ad-paid {
+  background: rgba(225, 29, 72, 0.08);
+  color: #e11d48;
+}
+[data-theme="dark"] .ss-ad-paid {
+  color: var(--accent-rose);
+}
+.ss-ad-mid {
+  font-weight: 600;
   padding: 1px 5px;
   border-radius: 3px;
-  background: rgba(124, 58, 237, 0.08);
-  color: var(--accent-violet);
-  letter-spacing: 0.03em;
+  background: rgba(217, 119, 6, 0.08);
+  color: #d97706;
 }
+[data-theme="dark"] .ss-ad-mid {
+  color: var(--accent-amber);
+}
+
+/* Legacy signal type badge (used in fallback) */
 .ss-type-badge {
   display: inline-flex;
   align-items: center;

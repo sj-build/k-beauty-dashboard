@@ -18,6 +18,8 @@ import type {
   CompanyDetail,
   CompanyBrand,
   SocialSignalItem,
+  SocialSignalDetail,
+  PlatformDiagnostic,
 } from './types'
 
 // ── Category resolution ──
@@ -1083,6 +1085,116 @@ export async function getBrandProducts(
   }
 }
 
+// ── Social Signal Diagnostics ──
+
+function computeDiagnostics(
+  signals: readonly SocialSignalDetail[],
+  adLevel: 'high' | 'mid' | 'low' | 'unknown',
+): {
+  platformBreakdown: readonly PlatformDiagnostic[]
+  momentumLevel: 'hot' | 'warm' | 'emerging' | 'quiet'
+  momentumScore: number
+  diagnosticSummary: string
+} {
+  // Group signals by platform
+  const platformMap: Record<string, {
+    signalTypes: Set<string>
+    totalViews: number
+    totalSaves: number
+    totalShares: number
+    saveChangePct: number
+    shareChangePct: number
+    viewChangePct: number
+    hasMetrics: boolean
+  }> = {}
+
+  for (const s of signals) {
+    const p = s.platform
+    if (!platformMap[p]) {
+      platformMap[p] = {
+        signalTypes: new Set(),
+        totalViews: 0, totalSaves: 0, totalShares: 0,
+        saveChangePct: 0, shareChangePct: 0, viewChangePct: 0,
+        hasMetrics: false,
+      }
+    }
+    const entry = platformMap[p]
+    entry.signalTypes.add(s.signal_type)
+
+    const rm = s.metadata?.raw_metrics
+    if (rm) {
+      entry.hasMetrics = true
+      entry.totalViews = rm.total_views ?? entry.totalViews
+      entry.totalSaves = rm.total_saves ?? entry.totalSaves
+      entry.totalShares = rm.total_shares ?? entry.totalShares
+      // Use the highest change pct seen across signals for this platform
+      if ((rm.save_change_pct ?? 0) > entry.saveChangePct) {
+        entry.saveChangePct = rm.save_change_pct ?? 0
+      }
+      if ((rm.share_change_pct ?? 0) > entry.shareChangePct) {
+        entry.shareChangePct = rm.share_change_pct ?? 0
+      }
+      if ((rm.view_change_pct ?? 0) > entry.viewChangePct) {
+        entry.viewChangePct = rm.view_change_pct ?? 0
+      }
+    }
+  }
+
+  const platformBreakdown: PlatformDiagnostic[] = Object.entries(platformMap)
+    .map(([platform, data]) => ({
+      platform,
+      total_views: data.hasMetrics ? data.totalViews : undefined,
+      total_saves: data.hasMetrics ? data.totalSaves : undefined,
+      total_shares: data.hasMetrics ? data.totalShares : undefined,
+      save_change_pct: data.hasMetrics ? Math.round(data.saveChangePct) : undefined,
+      share_change_pct: data.hasMetrics ? Math.round(data.shareChangePct) : undefined,
+      view_change_pct: data.hasMetrics ? Math.round(data.viewChangePct) : undefined,
+      signal_types: [...data.signalTypes],
+    }))
+
+  // Momentum scoring: platforms * signal diversity * max change rate
+  const platformCount = Object.keys(platformMap).length
+  const allSignalTypes = new Set(signals.map((s) => s.signal_type))
+  const signalDiversity = allSignalTypes.size
+  const maxChangePct = Math.max(
+    ...Object.values(platformMap).map((d) =>
+      Math.max(d.saveChangePct, d.shareChangePct, d.viewChangePct, 0)
+    ),
+    0,
+  )
+  const momentumScore = platformCount * signalDiversity * Math.min(maxChangePct / 100, 3)
+
+  let momentumLevel: 'hot' | 'warm' | 'emerging' | 'quiet'
+  if (momentumScore >= 4) momentumLevel = 'hot'
+  else if (momentumScore >= 2) momentumLevel = 'warm'
+  else if (momentumScore >= 0.5) momentumLevel = 'emerging'
+  else momentumLevel = 'quiet'
+
+  // Diagnostic summary
+  let diagnosticSummary: string
+  const hasSaveShareSurge = allSignalTypes.has('save_share_surge')
+  const hasEngagementSpike = allSignalTypes.has('engagement_spike')
+
+  if (platformCount >= 2 && hasSaveShareSurge) {
+    diagnosticSummary = `${platformCount} platforms with save/share surge = purchase intent signal`
+  } else if (platformCount >= 2 && hasEngagementSpike) {
+    diagnosticSummary = `${platformCount} platforms with engagement spike`
+  } else if (hasSaveShareSurge) {
+    const plat = platformBreakdown.find((p) => p.signal_types.includes('save_share_surge'))
+    diagnosticSummary = `${plat?.platform ?? 'Platform'} save/share surge detected`
+  } else if (hasEngagementSpike) {
+    diagnosticSummary = `Engagement spike across ${platformCount} platform${platformCount > 1 ? 's' : ''}`
+  } else if (allSignalTypes.has('influencer_pickup')) {
+    diagnosticSummary = 'Influencer pickup detected'
+  } else if (allSignalTypes.has('mention_velocity')) {
+    diagnosticSummary = 'Mention velocity rising'
+  } else {
+    diagnosticSummary = `${signalDiversity} signal type${signalDiversity > 1 ? 's' : ''} on ${platformCount} platform${platformCount > 1 ? 's' : ''}`
+  }
+
+  return { platformBreakdown, momentumLevel, momentumScore, diagnosticSummary }
+}
+
 // ── Social Signals ──
 
 export async function getSocialSignals(
@@ -1128,9 +1240,9 @@ export async function getSocialSignals(
         return categoryFilter.has(row.entity_name.toLowerCase())
       })
 
-    // Apply ad expense discount and sort by adjusted confidence
+    // Apply ad expense discount and compute diagnostics
     const items = filtered.map((row) => {
-      let signals = row.signals ?? []
+      let signals: SocialSignalDetail[] = row.signals ?? []
       if (typeof signals === 'string') {
         try { signals = JSON.parse(signals) } catch { signals = [] }
       }
@@ -1141,9 +1253,11 @@ export async function getSocialSignals(
       const adRatio = companyName ? getAdRatioByCompany(companyName) : undefined
       const adSpend = companyName ? getAdSpend(companyName) : undefined
 
-      // Adjusted confidence: raw confidence discounted by ad spend
-      // High ad spenders get lower adjusted confidence (their social signals may be paid)
       const adjustedConfidence = Math.round(row.confidence * organicMultiplier * 100) / 100
+
+      // Compute diagnostics from signal data
+      const { platformBreakdown, momentumLevel, momentumScore, diagnosticSummary } =
+        computeDiagnostics(signals, adLevel)
 
       return {
         id: row.id,
@@ -1162,12 +1276,20 @@ export async function getSocialSignals(
         ad_ratio: adRatio ?? undefined,
         ad_spend: adSpend ?? undefined,
         company_name: companyName,
+        momentum_level: momentumLevel,
+        momentum_score: momentumScore,
+        platform_breakdown: platformBreakdown,
+        diagnostic_summary: diagnosticSummary,
       }
     })
 
-    // Sort by adjusted confidence (ad-discounted) descending
+    // Sort by momentum score (diagnostic-first), fallback to adjusted confidence
     return items
-      .sort((a, b) => b.adjusted_confidence - a.adjusted_confidence)
+      .sort((a, b) => {
+        const scoreDiff = (b.momentum_score ?? 0) - (a.momentum_score ?? 0)
+        if (Math.abs(scoreDiff) > 0.1) return scoreDiff
+        return b.adjusted_confidence - a.adjusted_confidence
+      })
       .slice(0, limit)
   } catch (e) {
     console.error('Failed to get social signals:', e)
