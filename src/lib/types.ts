@@ -180,6 +180,18 @@ export interface SocialSignalItem {
   readonly momentum_score?: number
   readonly platform_breakdown?: readonly PlatformDiagnostic[]
   readonly diagnostic_summary?: string
+  readonly is_hidden_gem?: boolean
+  readonly brand_category?: string
+  readonly commerce?: {
+    readonly oliveyoung_best_rank?: number
+    readonly amazon_us_best_rank?: number
+    readonly amazon_ae_best_rank?: number
+    readonly tiktokshop_best_rank?: number
+    readonly wow_rank_change?: number
+    readonly leader_score?: number
+    readonly is_new_entrant?: boolean
+    readonly global_best_rank?: number
+  }
 }
 
 export interface RawMetrics {

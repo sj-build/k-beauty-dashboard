@@ -228,6 +228,35 @@ export function getBrandsByCompany(companyName: string): readonly string[] {
   return brands
 }
 
+// Conglomerate parent companies (brands under these are NOT hidden gems)
+const CONGLOMERATE_PARENTS = new Set([
+  '아모레퍼시픽', 'LG생활건강', 'CJ올리브영',
+])
+
+// Indie brands already mainstream in US retail (Amazon/Sephora Top 10)
+const MAINSTREAM_INDIE_BRANDS = new Set([
+  'cosrx', 'beauty of joseon', 'anua', 'torriden', 'skin1004',
+  'tirtir', 'round lab', 'numbuzin', 'romand', 'rom&nd', 'biodance',
+])
+
+/**
+ * Check if a brand qualifies as a Hidden Gem for VC deal sourcing.
+ * Excludes: conglomerate subsidiaries, already-mainstream indie brands.
+ */
+export function isHiddenGem(brand: string): boolean {
+  if (!brand) return false
+  const lower = brand.toLowerCase().trim()
+
+  // Exclude mainstream indie brands
+  if (MAINSTREAM_INDIE_BRANDS.has(lower)) return false
+
+  // Exclude conglomerate subsidiaries
+  const company = BRAND_TO_COMPANY[lower]
+  if (company && CONGLOMERATE_PARENTS.has(company)) return false
+
+  return true
+}
+
 export function isKbeautyBrand(brand: string): boolean {
   if (!brand) return false
   const lower = brand.toLowerCase().trim()

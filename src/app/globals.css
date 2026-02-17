@@ -770,6 +770,80 @@ body {
 }
 
 /* ================================================================
+   Social Signal — Leaders / Gems sections
+   ================================================================ */
+.ss-grouped {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.ss-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.ss-section-icon {
+  font-size: 1rem;
+}
+.ss-section-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.ss-section-count {
+  font-size: 0.62rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  color: var(--text-quaternary);
+  background: var(--bg-secondary);
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+}
+
+/* Commerce position chips */
+.ss-commerce {
+  margin-top: 4px;
+}
+.ss-commerce-ranks {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.ss-commerce-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.6rem;
+  font-weight: 500;
+  font-family: var(--font-mono);
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--bg-secondary);
+  color: var(--text-tertiary);
+}
+.ss-commerce-chip strong {
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+.ss-wow-up {
+  color: var(--accent-emerald);
+  font-weight: 600;
+}
+.ss-wow-down {
+  color: var(--accent-rose);
+  font-weight: 600;
+}
+.ss-new-entrant {
+  background: rgba(124, 58, 237, 0.08);
+  color: var(--accent-violet);
+  font-weight: 700;
+}
+
+/* ================================================================
    Search
    ================================================================ */
 .search-input {

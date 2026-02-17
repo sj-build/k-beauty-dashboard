@@ -1215,19 +1215,20 @@ export async function getSocialSignals(
     if (error) throw error
     if (!data?.length) return []
 
+    // Fetch brand info (id, name, category) once — used for both category filter and categoryMap
+    const allEntityNames = data.map((r) => r.entity_name)
+    const { data: allBrandInfo } = await supabase
+      .from('brands')
+      .select('id, name, category')
+      .in('name', allEntityNames)
+
     // Category filter
     let categoryFilter: Set<string> | null = null
     if (category) {
       const cats = getCategoryAliases(category)
-      const entityNames = data.map((r) => r.entity_name)
-      const { data: brands } = await supabase
-        .from('brands')
-        .select('name, category')
-        .in('name', entityNames)
-
-      if (brands?.length) {
+      if (allBrandInfo?.length) {
         categoryFilter = new Set(
-          brands
+          allBrandInfo
             .filter((b) => cats.includes(b.category))
             .map((b) => b.name.toLowerCase())
         )
@@ -1239,6 +1240,49 @@ export async function getSocialSignals(
         if (!categoryFilter) return true
         return categoryFilter.has(row.entity_name.toLowerCase())
       })
+
+    // Build brand category map from the single query
+    const categoryMap = new Map<string, string>()
+    const brandIdToName = new Map<string, string>()
+    for (const b of allBrandInfo ?? []) {
+      categoryMap.set(b.name.toLowerCase(), b.category)
+      brandIdToName.set(b.id, b.name)
+    }
+
+    // Fetch commerce data (weekly_brand_metrics) via brand_id join
+    const { isHiddenGem } = await import('./brands')
+    const filteredEntityNames = filtered.map((r) => r.entity_name)
+    const filteredBrandIds = (allBrandInfo ?? [])
+      .filter((b) => filteredEntityNames.some((n) => n.toLowerCase() === b.name.toLowerCase()))
+      .map((b) => b.id)
+
+    const commerceMap = new Map<string, SocialSignalItem['commerce']>()
+    if (filteredBrandIds.length > 0) {
+      const { data: metricsData } = await supabase
+        .from('weekly_brand_metrics')
+        .select('brand_id, global_best_rank, oliveyoung_best_rank, amazon_us_best_rank, amazon_ae_best_rank, tiktokshop_best_rank, wow_rank_change, leader_score, is_new_entrant')
+        .in('brand_id', filteredBrandIds)
+        .order('week_start', { ascending: false })
+
+      // Build commerce lookup: only keep latest week per brand
+      for (const m of metricsData ?? []) {
+        const brandName = brandIdToName.get(m.brand_id)
+        if (!brandName) continue
+        const key = brandName.toLowerCase()
+        if (!commerceMap.has(key)) {
+          commerceMap.set(key, {
+            oliveyoung_best_rank: m.oliveyoung_best_rank ?? undefined,
+            amazon_us_best_rank: m.amazon_us_best_rank ?? undefined,
+            amazon_ae_best_rank: m.amazon_ae_best_rank ?? undefined,
+            tiktokshop_best_rank: m.tiktokshop_best_rank ?? undefined,
+            wow_rank_change: m.wow_rank_change ?? undefined,
+            leader_score: m.leader_score ?? undefined,
+            is_new_entrant: m.is_new_entrant ?? undefined,
+            global_best_rank: m.global_best_rank ?? undefined,
+          })
+        }
+      }
+    }
 
     // Apply ad expense discount and compute diagnostics
     const items = filtered.map((row) => {
@@ -1258,6 +1302,8 @@ export async function getSocialSignals(
       // Compute diagnostics from signal data
       const { platformBreakdown, momentumLevel, momentumScore, diagnosticSummary } =
         computeDiagnostics(signals, adLevel)
+
+      const lowerName = row.entity_name.toLowerCase()
 
       return {
         id: row.id,
@@ -1280,6 +1326,9 @@ export async function getSocialSignals(
         momentum_score: momentumScore,
         platform_breakdown: platformBreakdown,
         diagnostic_summary: diagnosticSummary,
+        is_hidden_gem: isHiddenGem(row.entity_name),
+        brand_category: categoryMap.get(lowerName) ?? undefined,
+        commerce: commerceMap.get(lowerName) ?? undefined,
       }
     })
 

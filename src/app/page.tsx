@@ -162,8 +162,8 @@ function CrossborderTab({ category }: { readonly category: string }) {
 function SocialSignalTab({ category }: { readonly category: string }) {
   return (
     <>
-      <div className="section-hd">Social Signal</div>
-      <div className="section-sub">What&apos;s happening on social platforms right now</div>
+      <div className="section-hd">Social Signal + Commerce</div>
+      <div className="section-sub">Leaders vs Hidden Gems — social buzz with commerce position</div>
       <SocialSignalList category={category} />
     </>
   )
